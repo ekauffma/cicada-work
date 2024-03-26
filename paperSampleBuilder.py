@@ -72,7 +72,7 @@ basePath = '/hdfs/store/user/aloelige/'
 # }
 
 sampleDates = {
-    "05Feb2024": [
+    "08Mar2024": [
         "GluGluHToBB_M-125_TuneCP5_13p6TeV_powheg-pythia8",
         "GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8",
         "GluGluHToTauTau_M-125_TuneCP5_13p6TeV_powheg-pythia8",
@@ -138,7 +138,7 @@ for date in sampleDates:
 
 # Add the SUEPS by hand
 # samplePaths["SUEP"] = "/hdfs/store/user/aloeliger/SUEP_Paper_Analysis/08Jan2024/"
-samplePaths["SUEP"] = "/hdfs/store/user/aloeliger/SUEP_Paper_Analysis/05Feb2024/"
+samplePaths["SUEP"] = "/hdfs/store/user/aloeliger/SUEP_Paper_Analysis/08Marb2024/"
 
 treeNames = [
     'l1EventTree/L1EventTree',
@@ -148,6 +148,10 @@ treeNames = [
     'CICADA_v2p2p0_Ntuplizer/CICADA_v2p2p0',
     'CICADA_v1p2p0N_Ntuplizer/CICADA_v1p2p0N',
     'CICADA_v2p2p0N_Ntuplizer/CICADA_v2p2p0N',
+    'CICADA_v1p2p1_Ntuplizer/CICADA_v1p2p1',
+    'CICADA_v2p2p1_Ntuplizer/CICADA_v2p2p1',
+    'CICADA_v1p2p1N_Ntuplizer/CICADA_v1p2p1N',
+    'CICADA_v2p2p1N_Ntuplizer/CICADA_v2p2p1N'
 ]
 
 def buildSample(path, treeNames):
