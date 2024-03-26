@@ -1,10 +1,10 @@
-/*--------------------------------------------------------------------*/
-/* drawScorePlots_compare.py                                          */
-/* Author: Elliott Kauffman                                           */
-/* Takes output histograms from createScorePlots_compare.py and makes */
-/* plots comparing the score distribution for CICADA versions pre and */
-/* post-noise suppression                                             */
-/*--------------------------------------------------------------------*/
+########################################################################
+## drawScorePlots_compare.py                                          ##
+## Author: Elliott Kauffman                                           ##
+## Takes output histograms from createScorePlots_compare.py and makes ##
+## plots comparing the score distribution for CICADA versions pre and ##
+## post-noise suppression                                             ##
+########################################################################
 
 
 import ROOT

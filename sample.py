@@ -1,3 +1,10 @@
+########################################################################
+## sample.py                                                          ##
+## Author: Andrew Loeliger                                            ##
+## defines class for containing information from ROOT files           ##
+########################################################################
+
+
 #!/usr/bin/env python3
 
 import ROOT
@@ -6,7 +13,7 @@ class sample:
     def __init__(self, listOfFiles:list[str], treeNames:list[str]):
         self.listOfFiles = listOfFiles
         self.treeNames = treeNames
-    
+
     #We're going to move this off to be a reset of state
     #since undoing the friend process doesn't seem to be working
     def generateChains(self):
@@ -17,12 +24,12 @@ class sample:
             if splitName[0] not in self.chains.keys():
                 self.chains[splitName[0]] = {}
             self.chains[splitName[0]][splitName[1]] = ROOT.TChain(treeName)
-        
+
         for fileName in self.listOfFiles:
             for directoryName in self.chains:
                 for treeName in self.chains[directoryName]:
                     self.chains[directoryName][treeName].Add(fileName)
-        
+
     def listOfNamesToListOfChains(self, listOfTrees:list[str]):
         finalList = []
         for treeName in listOfTrees:
@@ -35,7 +42,7 @@ class sample:
             except KeyError:
                 print(f"Didn't find tree {treeName} in local chains. Skipping.")
         return finalList
-    
+
     def getListOfAllChains(self):
         finalList = []
         for directoryName in self.chains:
@@ -59,4 +66,4 @@ class sample:
         theChain = self.getNewChain(listOfTrees)
         theDataframe = ROOT.RDataFrame(theChain)
         return theDataframe
-    
+

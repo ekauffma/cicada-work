@@ -1,3 +1,11 @@
+########################################################################
+## sampleNames.py                                                     ##
+## Author: Elliott Kauffman                                           ##
+## Contains dictionary mapping file name of sample to plot legend     ##
+## name                                                               ##
+########################################################################
+
+
 sample_name_dict = {
         "GluGluHToBB_M-125_TuneCP5_13p6TeV_powheg-pythia8": "GluGluHToBB",
         "GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8": "GluGluHToGG",
@@ -50,6 +58,6 @@ sample_name_dict = {
         "VBFHToCC_M-125_TuneCP5_13p6TeV_powheg-pythia8": "VBFHToCC_M-125",
         "ZToMuMu_M-120To200_TuneCP5_13p6TeV_powheg-pythia8": "ZToMuMu_M-120To200",
         "ZToMuMu_M-200To400_TuneCP5_13p6TeV_powheg-pythia8": "ZToMuMu_M-200To400",
-        "ZeroBias": "Zero Bias"
-
+        "ZeroBias": "Zero Bias",
+        "SUEP": "SUEP",
 }

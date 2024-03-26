@@ -1,9 +1,9 @@
-/*--------------------------------------------------------------------*/
-/* createScorePlots_compare.py                                        */
-/* Author: Elliott Kauffman                                           */
-/* Creates histograms of the CICADA scores for noise-suppressed and   */
-/* non-noise suppressed versions                                      */
-/*--------------------------------------------------------------------*/
+########################################################################
+## createScorePlots_compare.py                                        ##
+## Author: Elliott Kauffman                                           ##
+## Creates histograms of the CICADA scores for noise-suppressed and   ##
+## non-noise suppressed versions                                      ##
+#######################################################################
 
 import ROOT
 import argparse
