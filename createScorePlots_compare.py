@@ -37,6 +37,7 @@ def main(nBins):
 
     # create one output file for each cicada version
 	for i in range(len(cicada_names)):
+        print("CICADA VERSION: ", cicada_names[i])
 
         # create output ROOT file
 		output_file = ROOT.TFile(
@@ -57,7 +58,7 @@ def main(nBins):
 
         # iterate through each sample
 		for k in range(len(sample_names)):
-			print(sample_names[k])
+            print("    Current Sample: ", sample_names[k])
 
 			# make score plot
 			histModel = ROOT.RDF.TH1DModel(
