@@ -77,8 +77,15 @@ def main(nBins):
 
 if __name__ == "__main__":
 
-	parser = argparse.ArgumentParser(description="This program creates CICADA score plots")
-	parser.add_argument("-n", "--n_bins", default=100, help="number of bins")
+	parser = argparse.ArgumentParser(
+        description="This program creates CICADA score plots"
+    )
+	parser.add_argument(
+        "-n",
+        "--n_bins",
+        default=100,
+        help="number of bins"
+    )
 
 	args = parser.parse_args()
 
