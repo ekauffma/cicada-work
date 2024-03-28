@@ -90,7 +90,11 @@ treeNames = [
     'CICADA_v1p2p1_Ntuplizer/CICADA_v1p2p1',
     'CICADA_v2p2p1_Ntuplizer/CICADA_v2p2p1',
     'CICADA_v1p2p1N_Ntuplizer/CICADA_v1p2p1N',
-    'CICADA_v2p2p1N_Ntuplizer/CICADA_v2p2p1N'
+    'CICADA_v2p2p1N_Ntuplizer/CICADA_v2p2p1N',
+    'CICADA_vXp2p0_Teacher_Ntuplizer/CICADA_vXp2p0_teacher',
+    'CICADA_vXp2p0N_Teacher_Ntuplizer/CICADA_vXp2p0N_teacher',
+    'CICADA_vXp2p1_Teacher_Ntuplizer/CICADA_vXp2p1_teacher',
+    'CICADA_vXp2p1N_Teacher_Ntuplizer/CICADA_vXp2p1N_teacher'
 ]
 
 # function for building sample object from files
