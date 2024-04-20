@@ -33,81 +33,75 @@ def main(nBins):
     min_score_ht = 0.0
     max_score_ht = 1500.0
 
-    # create one output file per CICADA model/version
-	for i in range(len(cicada_names)):
-        print("CICADA VERSION: ", cicada_names[i])
 
-        # create ROOT output file
-		output_file = ROOT.TFile(f'hists_240420_{cicada_names[i]}.root',
-                                 'RECREATE')
+    # create file for zerobias hists
+    print("Sample: ZeroBias")
+    output_file = ROOT.TFile("hists_240420_ZeroBias.root", "RECREATE")
 
-		# make histModel for zerobias
-		histModel = ROOT.RDF.TH1DModel(
-            f"anomalyScore_ZeroBias_{cicada_names[i]}",
-            f"anomalyScore_ZeroBias_{cicada_names[i]}",
+    # create and fill CICADA score histograms for zerobias
+    for i in range(len(cicada_names)):
+        print("    CICADA VERSION: ", cicada_names[i])
+
+        histModel = ROOT.RDF.TH1DModel(
+            f"anomalyScore_ZeroBias_test_{cicada_names[i]}",
+            f"anomalyScore_ZeroBias_test_{cicada_names[i]}",
             nBins,
             min_score_cicada,
-            max_score_cicada)
-
-        # get and write score hist
-        zero_bias_test = zero_bias_test.Define("sum_mask", "(sumBx==0) && (sumType==1)")
-        zero_bias_test = zero_bias_test.Define("HT", "sumEt[sum_mask]")
-        zero_bias_train = zero_bias_train.Define("sum_mask", "(sumBx==0) && (sumType==1)")
-        zero_bias_train = zero_bias_train.Define("HT", "sumEt[sum_mask]")
-
+            max_score_cicada
+        )
         hist = zero_bias_test.Histo1D(histModel, f"{cicada_names[i]}_score")
-		hist.Write()
+        hist.Write()
+
+        histModel = ROOT.RDF.TH1DModel(
+            f"anomalyScore_ZeroBias_train_{cicada_names[i]}",
+            f"anomalyScore_ZeroBias_train_{cicada_names[i]}",
+            nBins,
+            min_score_cicada,
+            max_score_cicada
+        )
         hist = zero_bias_train.Histo1D(histModel, f"{cicada_names[i]}_score")
         hist.Write()
 
-        # make histModel for zerobias HT
-        histModel = ROOT.RDF.TH1DModel(
-            f"HT_ZeroBias_{cicada_names[i]}",
-            f"HT_ZeroBias_{cicada_names[i]}",
-            nBins,
-            min_score_ht,
-            max_score_ht
-        )
+    # create and fill HT histograms for zerobias
+    print("    HT")
+    zero_bias_test = zero_bias_test.Define("sum_mask", "(sumBx==0) && (sumType==1)")
+    zero_bias_test = zero_bias_test.Define("HT", "sumEt[sum_mask]")
+    zero_bias_train = zero_bias_train.Define("sum_mask", "(sumBx==0) && (sumType==1)")
+    zero_bias_train = zero_bias_train.Define("HT", "sumEt[sum_mask]")
 
-        # get and write ht hist
-        hist = zero_bias_test.Histo1D(histModel, "HT")
-        hist.Write()
-        hist = zero_bias_train.Histo1D(histModel, "HT")
-        hist.Write()
+    histModel = ROOT.RDF.TH1DModel(
+        f"HT_ZeroBias_test_{cicada_names[i]}",
+        f"HT_ZeroBias_test_{cicada_names[i]}",
+        nBins,
+        min_score_ht,
+        max_score_ht
+    )
+    hist = zero_bias_test.Histo1D(histModel, "HT")
+    hist.Write()
 
-        # create and write hists for each sample
-		for k in range(len(sample_names)):
-            print("    Current Sample: ", sample_names[k])
+    histModel = ROOT.RDF.TH1DModel(
+        f"HT_ZeroBias_train_{cicada_names[i]}",
+        f"HT_ZeroBias_train_{cicada_names[i]}",
+        nBins,
+        min_score_ht,
+        max_score_ht
+    )
+    hist = zero_bias_train.Histo1D(histModel, "HT")
+    hist.Write()
 
-            rdf = samples[sample_names[k]].getNewDataframe()
-            rdf = rdf.Define("sum_mask", "(sumBx==0) && (sumType==1)")
-            rdf = rdf.Define("HT", "sumEt[sum_mask]")
-
-			# make score hist
-			histModel = ROOT.RDF.TH1DModel(
-                f"anomalyScore_{sample_names[k]}_{cicada_names[i]}",
-                f"anomalyScore_{sample_names[k]}_{cicada_names[i]}",
-				nBins,
-                min_score_cicada,
-                max_score_cicada
-            )
-            hist = rdf.Histo1D(histModel, f"cicada_names[i]_score")
-			hist.Write()
-
-            # make ht hist
-            histModel = ROOT.RDF.TH1DModel(
-                f"HT_{sample_names[k]}_{cicada_names[i]}",
-                f"HT_{sample_names[k]}_{cicada_names[i]}",
-                nBins,
-                min_score_ht,
-                max_score_ht
-            )
-            hist = rdf.Histo1D(histModel, "HT")
-            hist.Write()
+    output_file.Write()
+    output_file.Close()
 
 
-		output_file.Write()
-		output_file.Close()
+    # create and write hists for each sample
+    for k in range(len(sample_names)):
+        print(f"Sample: {sample_names[k]}")
+        output_file = ROOT.TFile(f"hists_240420_{sample_names[k]}.root". "RECREATE")
+
+
+
+
+
 
 if __name__ == "__main__":
 
