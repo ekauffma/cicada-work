@@ -70,8 +70,8 @@ def main(nBins):
     zero_bias_train = zero_bias_train.Define("HT", "sumEt[sum_mask]")
 
     histModel = ROOT.RDF.TH1DModel(
-        f"HT_ZeroBias_test_{cicada_names[i]}",
-        f"HT_ZeroBias_test_{cicada_names[i]}",
+        f"HT_ZeroBias_test",
+        f"HT_ZeroBias_test",
         nBins,
         min_score_ht,
         max_score_ht
@@ -80,8 +80,8 @@ def main(nBins):
     hist.Write()
 
     histModel = ROOT.RDF.TH1DModel(
-        f"HT_ZeroBias_train_{cicada_names[i]}",
-        f"HT_ZeroBias_train_{cicada_names[i]}",
+        f"HT_ZeroBias_train",
+        f"HT_ZeroBias_train",
         nBins,
         min_score_ht,
         max_score_ht
@@ -96,41 +96,44 @@ def main(nBins):
     # create and write hists for each sample
     for k in range(len(sample_names)):
         print(f"Sample: {sample_names[k]}")
-        output_file = ROOT.TFile(f"hists_240420_{sample_names[k]}.root", "RECREATE")
+        try:
+            output_file = ROOT.TFile(f"hists_240420_{sample_names[k]}.root", "RECREATE")
 
-        rdf = samples[sample_names[k]].getNewDataframe()
+            rdf = samples[sample_names[k]].getNewDataframe()
 
-        # create and fill CICADA score histograms
-        for i in range(len(cicada_names)):
-            print("    CICADA VERSION: ", cicada_names[i])
+            # create and fill CICADA score histograms
+            for i in range(len(cicada_names)):
+                print("    CICADA VERSION: ", cicada_names[i])
+
+                histModel = ROOT.RDF.TH1DModel(
+                    f"anomalyScore_{sample_names[k]}_{cicada_names[i]}",
+                    f"anomalyScore_{sample_names[k]}_{cicada_names[i]}",
+                    nBins,
+                    min_score_cicada,
+                    max_score_cicada
+                )
+                hist = rdf.Histo1D(histModel, f"{cicada_names[i]}_score")
+                hist.Write()
+
+            # create and fill HT histogram
+            print("   HT")
+            rdf = rdf.Define("sum_mask", "(sumBx==0) && (sumType==1)")
+            rdf = rdf.Define("HT", "sumEt[sum_mask]")
 
             histModel = ROOT.RDF.TH1DModel(
-                f"anomalyScore_{sample_names[k]}_{cicada_names[i]}",
-                f"anomalyScore_{sample_names[k]}_test_{cicada_names[i]}",
+                f"HT_{sample_names[k]}",
+                f"HT_{sample_names[k]}",
                 nBins,
-                min_score_cicada,
-                max_score_cicada
+                min_score_ht,
+                max_score_ht
             )
-            hist = rdf.Histo1D(histModel, f"{cicada_names[i]}_score")
+            hist = rdf.Histo1D(histModel, "HT")
             hist.Write()
 
-        # create and fill HT histogram
-        print("   HT")
-        rdf = rdf.Define("sum_mask", "(sumBx==0) && (sumType==1)")
-        rdf = rdf.Define("HT", "sumEt[sum_mask]")
-
-        histModel = ROOT.RDF.TH1DModel(
-            f"HT_{sample_names[k]}_{cicada_names[i]}",
-            f"HT_{sample_names[k]}_{cicada_names[i]}",
-            nBins,
-            min_score_ht,
-            max_score_ht
-        )
-        hist = rdf.Histo1D(histModel, "HT")
-        hist.Write()
-
-        output_file.Write()
-        output_file.Close()
+            output_file.Write()
+            output_file.Close()
+        except Exception:
+            print("    Could not create file. Check contents..")
 
 
 if __name__ == "__main__":
