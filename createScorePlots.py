@@ -18,13 +18,14 @@ def main(nBins):
 
     # get zerobias and filter out training events
 	zero_bias = samples['ZeroBias'].getNewDataframe()
-	zero_bias = zero_bias.Filter('lumi % 2 == 1')
+	zero_bias_test = zero_bias.Filter('lumi % 2 == 1')
+    zero_bias_train = zero_bias.Filter('lumi % 2 == 0')
 
     # names of CICADA models
-	cicada_names = ["CICADA_v1p2p0",
-                    "CICADA_v2p2p0",
-                    "CICADA_v1p2p0N",
-                    "CICADA_v2p2p0N"]
+	cicada_names = ["CICADA_v1p2p2",
+                    "CICADA_v2p2p2",
+                    "CICADA_v1p2p2N",
+                    "CICADA_v2p2p2N"]
 
     # minimum and maximum scores for histogram
 	min_score = 0.0

@@ -84,7 +84,7 @@ def main(input_file1, input_file2, N,  output_dir, cicada_name):
 			hist_sng = f[j].Get(
                 f"anomalyScore_SingleNeutrino_E-10-gun_{cicada_name}p{j}{N_str}"
             )
-			hist_sample = f[j].Get(
+            hist_sample = f[j].Get(
                 f"anomalyScore_{sample_names[i]}_{cicada_name}p{j}{N_str}"
             )
 
@@ -137,7 +137,7 @@ def main(input_file1, input_file2, N,  output_dir, cicada_name):
 			legends[-1].AddEntry(hist_zb,
                                  "Zero Bias",
                                  "PE")
-			legends[-1].AddEntry(hist_sng,
+            legends[-1].AddEntry(hist_sng,
                                  "Single Neutrino Gun",
                                  "PE")
 			legends[-1].AddEntry(hist_sample,

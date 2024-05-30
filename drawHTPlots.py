@@ -86,6 +86,7 @@ def main(input_file, output_dir):
             # histogram 2
             #hist_ht_rec.Scale(1/hist_ht_rec.Integral())  # normalize
             hist_ht_rec.SetStats(0)  # remove statistics box from plot
+            hist_ht_rec.GetXaxis().SetLimits(0,1000)
             hist_ht_rec.SetTitle("")  # remove title from plot )
             hist_ht_rec.Draw("e same")  # draw histogram
 
@@ -97,8 +98,8 @@ def main(input_file, output_dir):
 
 		    # create and draw legend
             legend = ROOT.TLegend(0.6, 0.7, 1.0, 0.9)
-            legend.AddEntry(hist_ht, "HT ", "PE")
-            legend.AddEntry(hist_ht_rec, "Reconstructed HT", "PE")
+            legend.AddEntry(hist_ht, "By-Hand HT ", "PE")
+            legend.AddEntry(hist_ht_rec, "Layer-2 HT", "PE")
             legend.SetTextSize(0.04)
             legend.SetBorderSize(0)
             legend.SetFillStyle(0)
@@ -127,7 +128,7 @@ def main(input_file, output_dir):
 		    # create horizontal line at 0
             xvals = array('d')
             yvals = array('d')
-            n = 300
+            n = 2000
             for j in range(n):
                 xvals.append(j)
                 yvals.append(1)
@@ -137,7 +138,7 @@ def main(input_file, output_dir):
             g.GetYaxis().SetRangeUser(5e-1,5e1)  # set y axis range
             g.SetTitle("")  # make title invisible
             g.GetXaxis().SetTitle("HT (jetEt>30, |jetEta|<2.4)")  # set x axis title
-            g.GetYaxis().SetTitle("HT / Reconstructed HT")  # set y axis title
+            g.GetYaxis().SetTitle("By-Hand HT / Layer-2 HT")  # set y axis title
             # spacing and text size options
             g.GetXaxis().SetLabelSize(0.07)
             g.GetYaxis().SetLabelSize(0.07)

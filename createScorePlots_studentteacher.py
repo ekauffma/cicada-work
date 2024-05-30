@@ -26,7 +26,7 @@ def main(nBins):
         #"CICADA_v2p2p0",
         #"CICADA_v1p2p0N",
         #"CICADA_v2p2p0N",
-        "CICADA_vXp2p0_teacher",
+        #"CICADA_vXp2p0_teacher",
         "CICADA_vXp2p0N_teacher"
     ]
 
@@ -39,53 +39,45 @@ def main(nBins):
 
         print("CICADA VERSION: ", cicada_names[i])
 
-        try:
+        # create output ROOT file
+        output_file = ROOT.TFile(
+            f'hists_compare_240312_{cicada_names[i]}.root',
+            'RECREATE'
+        )
 
-            if "teacher" in cicada_names[i]:
-                zero_bias = zero_bias.Define(f"{cicada_names[i]}_score_teacher", f"32*log({cicada_names[i]}_score)")
+        # make hists for zerobias
+        histModel = ROOT.RDF.TH1DModel(
+            f"anomalyScore_ZeroBias_{cicada_names[i]}",
+            f"anomalyScore_ZeroBias_{cicada_names[i]}",
+             nBins,
+            min_score,
+            max_score
+        )
+        if "teacher" in cicada_names[i]:
+            zero_bias = zero_bias.Redefine(f"{cicada_names[i]}_score", f"32*log({cicada_names[i]}_score)")
+        hist = zero_bias.Histo1D(histModel, f"{cicada_names[i]}_score")
+        hist.Write()
 
-            # create output ROOT file
-            output_file = ROOT.TFile(
-                f'hists_compare_240312_{cicada_names[i]}.root',
-                'RECREATE'
-            )
+        # iterate through each sample
+        for k in range(len(sample_names)):
+            print("    Current Sample: ", sample_names[k])
 
-            # make hists for zerobias
+            # make score plot
             histModel = ROOT.RDF.TH1DModel(
-                f"anomalyScore_ZeroBias_{cicada_names[i]}",
-                f"anomalyScore_ZeroBias_{cicada_names[i]}",
+                f"anomalyScore_{sample_names[k]}_{cicada_names[i]}",
+                f"anomalyScore_{sample_names[k]}_{cicada_names[i]}",
                 nBins,
                 min_score,
-                max_score
-            )
+                max_score)
+            rdf = samples[sample_names[k]].getNewDataframe()
+
             if "teacher" in cicada_names[i]:
-                hist = zero_bias.Histo1D(histModel, f"{cicada_names[i]}_score_teacher")
-            else: hist = zero_bias.Histo1D(histModel, f"{cicada_names[i]}_score")
+                print("    Calculating teacher score")
+                rdf = rdf.Redefine(f"{cicada_names[i]}_score", f"32*log({cicada_names[i]}_score)")
+
+            hist = rdf.Histo1D(histModel, f"{cicada_names[i]}_score")
             hist.Write()
 
-            # iterate through each sample
-            for k in range(len(sample_names)):
-                print("    Current Sample: ", sample_names[k])
-
-                # make score plot
-                histModel = ROOT.RDF.TH1DModel(
-                    f"anomalyScore_{sample_names[k]}_{cicada_names[i]}",
-                    f"anomalyScore_{sample_names[k]}_{cicada_names[i]}",
-                    nBins,
-                    min_score,
-                    max_score)
-                rdf = samples[sample_names[k]].getNewDataframe()
-
-                if "teacher" in cicada_names[i]:
-                    rdf = rdf.Define(f"{cicada_names[i]}_score_teacher", f"32*log({cicada_names[i]}_score)")
-                    hist = rdf.Histo1D(histModel, f"{cicada_names[i]}_score_teacher")
-                else: hist = rdf.Histo1D(histModel, f"{cicada_names[i]}_score")
-
-                hist = rdf.Histo1D(histModel, f"{cicada_names[i]}_score")
-                hist.Write()
-
-        except Exception:
-            print("        Failed for current sample.")
 
         # write and close file
         output_file.Write()

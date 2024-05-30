@@ -41,7 +41,8 @@ efficiencies = {
     "SUSYGluGluToBBHToBB_NarrowWidth_M-120_TuneCP5_13p6TeV-pythia8": 0.1357787056367432,
     "SUSYGluGluToBBHToBB_NarrowWidth_M-350_TuneCP5_13p6TeV-pythia8": 0.76601,
     "SUSYGluGluToBBHToBB_NarrowWidth_M-600_TuneCP5_13p6TeV-pythia8": 0.87872,
-
-
+    "SingleNeutrino_E-10-gun": 0.0028100358422939067,
+    "VBFHToCC_M-125_TuneCP5_13p6TeV_powheg-pythia8": 0.5746591185780375,
+    "ZeroBias": 0.007204272772241323,
 
 }

@@ -38,9 +38,9 @@ def createCMSLabel():
 	return cmsLatex
 
 
-def main(input_file, output_dir, cicada_name):
+def main(file_prefix, output_dir, cicada_name):
 
-    f = ROOT.TFile(input_file)
+    f_zb = ROOT.TFile(f"{file_prefix}_ZeroBias.root")
 
     # create ROOT canvas
     c1 = ROOT.TCanvas("c1", "Anomaly Score", 1000,800)
@@ -60,7 +60,7 @@ def main(input_file, output_dir, cicada_name):
     pad1.cd()
 
     # get zerobias histogram
-    hist_zerobias = f.Get(f"anomalyScore_ZeroBias_{cicada_name}")
+    hist_zerobias = f_zb.Get(f"anomalyScore_ZeroBias_{cicada_name}")
 
     # change histogram style options and draw
     hist_zerobias.GetYaxis().SetRangeUser(5e-1,1e7)
@@ -79,6 +79,8 @@ def main(input_file, output_dir, cicada_name):
     # iterate through samples in shortlist
     for i in range(len(sample_list)):
 
+        f = ROOT.TFile(f"{file_prefix}_{sample_list[i]}.root")
+
         # get sample histogram
         hist_sample = f.Get(
             f"anomalyScore_{sample_list[i]}_{cicada_name}"
@@ -96,6 +98,8 @@ def main(input_file, output_dir, cicada_name):
         legend.AddEntry(hist_sample,
                         f"{sample_name_dict[sample_list[i]]}",
                         "PE")
+
+        f.Close()
 
     # draw cms label
     cmsLatex = createCMSLabel()

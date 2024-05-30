@@ -22,7 +22,7 @@ def main(nBins):
 
     # min and max scores for histograms
     min_score = 0.0
-    max_score = 1024.0
+    max_score = 3000.0
 
 
     # create output ROOT file
@@ -76,8 +76,8 @@ def main(nBins):
         hist.Write()
 
         histModel = ROOT.RDF.TH1DModel(
-            "HT_rec_{sample_names[k]}",
-            "HT_rec_{sample_names[k]}",
+            f"HT_rec_{sample_names[k]}",
+            f"HT_rec_{sample_names[k]}",
             nBins,
             min_score,
             max_score
@@ -97,7 +97,7 @@ if __name__ == "__main__":
 	parser.add_argument(
         "-n",
         "--n_bins",
-        default=100,
+        default=200,
         help="number of bins"
     )
 
