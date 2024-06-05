@@ -16,7 +16,7 @@ treeNames = [
     'l1EventTree/L1EventTree',
     'l1CaloTowerEmuTree/L1CaloTowerTree',
     'l1UpgradeTree/L1UpgradeTree',
-    #'L1TTriggerBitsNtuplizer/L1TTriggerBits',
+    'L1TTriggerBitsNtuplizer/L1TTriggerBits',
     #'CICADA_v1p2p0_Ntuplizer/CICADA_v1p2p0',
     #'CICADA_v2p2p0_Ntuplizer/CICADA_v2p2p0',
     #'CICADA_v1p2p0N_Ntuplizer/CICADA_v1p2p0N',
