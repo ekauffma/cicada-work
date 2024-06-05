@@ -42,16 +42,23 @@ def createLabel():
 
     return latex
 
-def calculateROC(bkg_hist, sig_hist):
+def calculateROC(bkg_hist, sig_hist, axis):
+
+    if axis not in [0,1]:
+        raise ValueError("axis must be 0 or 1")
 
     # get total integral of background histogram
     integral_bkg = float(
-        bkg_hist.Integral(0, bkg_hist.GetNbinsX()+1)
+        bkg_hist.Integral(0, bkg_hist.GetNbinsX()+1,
+                          0, bkg_hist.GetNbinsY()+1,
+                          0, bkg_hist.GetNbinsZ()+1)
     )
 
     # get total integral of signal histogram
     integral_sig = float(
-        sig_hist.Integral(0, sig_hist.GetNbinsX()+1)
+        sig_hist.Integral(0, sig_hist.GetNbinsX()+1,
+                          0, sig_hist.GetNbinsY()+1,
+                          0, sig_hist.GetNbinsZ()+1)
     )
 
     edges = [sig_hist.GetXaxis().GetBinLowEdge(i) for i in range(1, sig_hist.GetNbinsX() + 2)]
@@ -60,8 +67,21 @@ def calculateROC(bkg_hist, sig_hist):
     fpr = []
     for threshold in edges:
         threshold_bin = sig_hist.GetXaxis().FindBin(threshold)
-        integral_sig_partial = sig_hist.Integral(threshold_bin, sig_hist.GetNbinsX() + 1)
-        integral_bkg_partial = bkg_hist.Integral(threshold_bin, bkg_hist.GetNbinsX() + 1)
+        
+        if axis==0:
+            integral_sig_partial = sig_hist.Integral(threshold_bin, sig_hist.GetNbinsX() + 1,
+                                                     0, sig_hist.GetNbinsY()+1,
+                                                     0, sig_hist.GetNbinsZ()+1)
+            integral_bkg_partial = bkg_hist.Integral(threshold_bin, bkg_hist.GetNbinsX() + 1,
+                                                     0, bkg_hist.GetNbinsY()+1,
+                                                     0, bkg_hist.GetNbinsZ()+1)
+        else:
+            integral_sig_partial = sig_hist.Integral(0, sig_hist.GetNbinsX() + 1,
+                                                     threshold_bin, sig_hist.GetNbinsY()+1,
+                                                     0, sig_hist.GetNbinsZ()+1)
+            integral_bkg_partial = bkg_hist.Integral(0, bkg_hist.GetNbinsX() + 1,
+                                                     threshold_bin, bkg_hist.GetNbinsY()+1,
+                                                     0, bkg_hist.GetNbinsZ()+1)
 
         tpr_current = integral_sig_partial / integral_sig
         fpr_current = integral_bkg_partial / integral_bkg
@@ -95,7 +115,7 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
     if or_axis == 1:
         or_threshold_bin = sig_hist.GetYaxis().FindBin(or_threshold)
     else:
-        or_threshold_bin = sig_hist.GetYaxis().FindBin(or_threshold)
+        or_threshold_bin = sig_hist.GetZaxis().FindBin(or_threshold)
 
     edges = [sig_hist.GetXaxis().GetBinLowEdge(i) for i in range(1, sig_hist.GetNbinsX() + 2)]
 
@@ -127,7 +147,7 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
             overlap_bkg = bkg_hist.Integral(threshold_bin, bkg_hist.GetNbinsX() + 1,
                                             or_threshold_bin, bkg_hist.GetNbinsY() + 1,
                                             0, bkg_hist.GetNbinsZ() + 1)
-            
+
         else:
             # Integrate over bins where y or z > or_threshold, including overflow bins
             integral_sig_partial_yz = sig_hist.Integral(0, sig_hist.GetNbinsX() + 1,
@@ -144,7 +164,7 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
                                             0, bkg_hist.GetNbinsY() + 1,
                                             or_threshold_bin, bkg_hist.GetNbinsZ() + 1)
 
-        
+
 
         accepted_sig = integral_sig_partial_x + integral_sig_partial_yz - overlap_sig
         accepted_bkg = integral_bkg_partial_x + integral_bkg_partial_yz - overlap_bkg
@@ -176,18 +196,25 @@ def createROCTGraph(tpr, fpr, color = 1, markerstyle = 20, first = True, bkg_nam
         g.GetXaxis().SetTitle(f"{bkg_name} Efficiency (FPR)")
         g.GetYaxis().SetTitle("Signal Efficiency")
     g.GetXaxis().SetRangeUser(0, max_eff_val_x)
-    #g.GetXaxis().SetLimits(0, max_eff_val_x)
+    g.GetXaxis().SetLimits(0, max_eff_val_x)
     g.GetYaxis().SetRangeUser(0, max_eff_val_y)
-    
+
     return g
 
 def getL1UnprescaledEfficiency(hist):
 
-    hist_projection = hist.ProjectionZ("l1_unprescaled", 0, hist.GetNbinsX()+1, 0, hist.GetNbinsY()+1)
-    n_fail = hist_projection.GetBinContent(1)
-    n_pass = hist_projection.GetBinContent(0)
+    n_fail = hist.Integral(0, hist.GetNbinsX()+1, 0, hist.GetNbinsY()+1, 1, 1)
+    n_pass = hist.Integral(0, hist.GetNbinsX()+1, 0, hist.GetNbinsY()+1, 2, 2)
 
     return n_pass / (n_fail + n_pass)
+
+def getHTEfficiency(hist):
+    ht_threshold_bin = hist.GetYaxis().FindBin(ht_threshold)
+    n_denominator = hist.Integral(0, hist.GetNbinsX()+1, 0, hist.GetNbinsY()+1, 0, hist.GetNbinsZ()+1)
+    n_numerator = hist.Integral(0, hist.GetNbinsX()+1, ht_threshold_bin, hist.GetNbinsY()+1, 0, hist.GetNbinsZ()+1)
+
+    return n_numerator / n_denominator
+
 
 
 
@@ -214,7 +241,7 @@ def main(file_prefix, out_dir):
 
                 if sample_names[i]=="ZeroBias": continue
                 if sample_names[i]=="SingleNeutrino_E-10-gun": continue
-                if sample_names[i]!="GluGluHToBB_M-125_TuneCP5_13p6TeV_powheg-pythia8": continue
+                if sample_names[i]!="TT_TuneCP5_13p6TeV_powheg-pythia8": continue
 
                 print()
                 print(sample_names[i])
@@ -229,33 +256,19 @@ def main(file_prefix, out_dir):
                 h_s = f_s.Get(f"anomalyScore_{sample_names[i]}_{cicada_names[k]}")
                 ht_bin = h_s.GetYaxis().FindBin(200)
 
-                tpr_cicada, fpr_cicada = calculateROC(
-                    h_zb.ProjectionX("CICADA_score", 0, h_zb.GetNbinsY()+1),
-                    h_s.ProjectionX("CICADA_score", 0, h_s.GetNbinsY()+1)
-                )
-                print("TPR (CICADA) = ", tpr_cicada)
-                print("FPR (CICADA) = ", fpr_cicada, "\n")
+                tpr_cicada, fpr_cicada = calculateROC(h_zb, h_s, 0)
 
-                tpr_ht, fpr_ht = calculateROC(
-                    h_zb.ProjectionY("HT", 0, h_zb.GetNbinsX()+1),
-                    h_s.ProjectionY("HT", 0, h_s.GetNbinsX()+1)
-                )
-                print("TPR (HT) = ", tpr_ht)
-                print("FPR (HT) = ", fpr_ht, "\n")
+                tpr_ht, fpr_ht = calculateROC(h_zb, h_s, 1)
 
                 try:
                     tpr_or_ht, fpr_or_ht = calculateROCOR(h_zb, h_s, ht_threshold, 1)
                 except ValueError as e:
                     print("Error:", e)
-                print("TPR (HT OR CICADA) = ", tpr_or_ht)
-                print("FPR (HT OR CICADA) = ", fpr_or_ht, "\n")
 
                 try:
                     tpr_or_l1, fpr_or_l1 = calculateROCOR(h_zb, h_s, l1_threshold, 2)
                 except ValueError as e:
                     print("Error:", e)
-                print("TPR (L1 OR CICADA) = ", tpr_or_l1)
-                print("FPR (L1 OR CICADA) = ", fpr_or_l1, "\n")
 
 
                 ########################################################################
@@ -298,7 +311,7 @@ def main(file_prefix, out_dir):
 
                 # plot point for l1 unprescaled efficiency
                 l1_eff_s = getL1UnprescaledEfficiency(h_s)
-                l1_eff_zb = getL1UnprescaledEfficiency(h_s)
+                l1_eff_zb = getL1UnprescaledEfficiency(h_zb)
                 print("L1 Unprescaled Signal Efficiency = ", l1_eff_s)
                 print("L1 Unprescaled Bkg Efficiency = ", l1_eff_zb)
                 g_l1 = ROOT.TGraph(1, array('d', [l1_eff_zb]), array('d', [l1_eff_s]))
@@ -308,12 +321,25 @@ def main(file_prefix, out_dir):
                 g_l1.GetYaxis().SetRangeUser(0, max_eff_val_y)
                 g_l1.Draw("P same")
 
+                ht_eff_s = getHTEfficiency(h_s)
+                ht_eff_zb = getHTEfficiency(h_zb)
+                print("HT>200 Signal Efficiency = ", ht_eff_s)
+                print("HT>200 Bkg Efficiency = ", ht_eff_zb)
+                g_ht_point = ROOT.TGraph(1, array('d', [ht_eff_zb]), array('d', [ht_eff_s]))
+                g_ht_point.SetMarkerSize(1)
+                g_ht_point.SetMarkerColor(4)
+                g_ht_point.SetMarkerStyle(20)
+                g_ht_point.GetXaxis().SetRangeUser(0, max_eff_val_x)
+                g_ht_point.GetYaxis().SetRangeUser(0, max_eff_val_y)
+                g_ht_point.Draw("P same")
+
                 # draw legend
                 legend = ROOT.TLegend(0.1,0.77,0.9, 0.9)
                 legend.AddEntry(g_or, "(CICADA > Threshold) or (HT > 200) ")
                 legend.AddEntry(g_cicada, "CICADA > Threshold")
-                legend.AddEntry(g_ht, "HT > 200")
-                legend.AddEntry(g_l1, "Unprescaled Trigger Efficiency", "p")
+                legend.AddEntry(g_ht, "HT > Threshold")
+                legend.AddEntry(g_l1, "Unprescaled Trigger", "p")
+                legend.AddEntry(g_ht_point, "HT > 200", "p")
                 legend.SetBorderSize(0)
                 legend.SetFillStyle(0)
                 legend.SetTextSize(0.025)
@@ -357,7 +383,7 @@ def main(file_prefix, out_dir):
 
                 # plot point for l1 unprescaled efficiency
                 l1_eff_s = getL1UnprescaledEfficiency(h_s)
-                l1_eff_zb = getL1UnprescaledEfficiency(h_s)
+                l1_eff_zb = getL1UnprescaledEfficiency(h_zb)
                 print("L1 Unprescaled Signal Efficiency = ", l1_eff_s)
                 print("L1 Unprescaled Bkg Efficiency = ", l1_eff_zb)
                 g_l1 = ROOT.TGraph(1, array('d', [l1_eff_zb]), array('d', [l1_eff_s]))
