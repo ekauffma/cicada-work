@@ -16,7 +16,7 @@ max_eff_val_x = 0.03 # x axis range, set for debugging purposes
 max_eff_val_y = 1.2 # y axis range, gives extra room for legend
 
 # convert from efficiency to rate
-rate_scale_factor = 2544.0 * 11245e-3
+rate_scale_factor = 2452.0 * 11245e-3
 
 # threshold values for OR ROC plots
 ht_threshold = 200
@@ -66,8 +66,7 @@ def calculateROC(bkg_hist, sig_hist, axis):
     )
 
     # get list of thresholds
-    edges = [(sig_hist.GetXaxis().GetBinLowEdge(i)
-              for i in range(1, sig_hist.GetNbinsX() + 2))]
+    edges = [sig_hist.GetXaxis().GetBinLowEdge(i) for i in range(1, sig_hist.GetNbinsX() + 2)]
 
     tpr = []
     fpr = []
@@ -148,8 +147,7 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
         or_threshold_bin = sig_hist.GetZaxis().FindBin(or_threshold)
 
     # get list of thresholds
-    edges = [(sig_hist.GetXaxis().GetBinLowEdge(i)
-              for i in range(1, sig_hist.GetNbinsX() + 2))]
+    edges = [sig_hist.GetXaxis().GetBinLowEdge(i) for i in range(1, sig_hist.GetNbinsX() + 2)]
 
     tpr = []
     fpr = []
@@ -264,8 +262,8 @@ def createROCTGraph(tpr, fpr, color = 1, markerstyle = 20, first = True, bkg_nam
     g.SetMarkerSize(1)
     g.SetMarkerStyle(markerstyle)
     if first:
-        g.GetXaxis().SetTitle(f"{bkg_name} Efficiency (FPR)")
-        g.GetYaxis().SetTitle("Signal Efficiency")
+        g.GetXaxis().SetTitle(f"{bkg_name} FPR (Number Accepted)/(Total)")
+        g.GetYaxis().SetTitle("Signal TPR (Number Accepted)/(Total)")
     g.GetXaxis().SetRangeUser(0, max_eff_val_x)
     g.GetXaxis().SetLimits(0, max_eff_val_x)
     g.GetYaxis().SetRangeUser(0, max_eff_val_y)
@@ -291,6 +289,74 @@ def getHTEfficiency(hist):
     n_numerator = hist.Integral(0, hist.GetNbinsX()+1, ht_threshold_bin, hist.GetNbinsY()+1, 0, hist.GetNbinsZ()+1)
 
     return n_numerator / n_denominator
+    
+########################################################################
+# Uses the 3d input histogram hist (zero bias) to calculate the ratio of
+# accepted events to total events for each threshold. This is done for
+# the specified axis "axis" which is 0 for CICADA score and 1 for HT.
+# Returns a TH1D histogram of ratios of accepted events
+def getAcceptRatioHist(hist, axis, hist_name = "ratio_accepted"):
+
+    if axis not in [0,1]:
+        raise ValueError("axis must be 0 or 1")
+
+    # get total integral of histogram
+    integral = float(
+        hist.Integral(
+            0, hist.GetNbinsX()+1,
+            0, hist.GetNbinsY()+1,
+            0, hist.GetNbinsZ()+1
+        )
+    )
+        
+    # get list of thresholds
+    if axis==0:
+        thresholds = [hist.GetXaxis().GetBinLowEdge(i) for i in range(1, hist.GetNbinsX() + 2)]
+    else:
+        thresholds = [hist.GetYaxis().GetBinLowEdge(i) for i in range(1, hist.GetNbinsY() + 2)]
+                      
+    # create efficiency hist
+    hist_out = ROOT.TH1D(
+        hist_name,
+        "(Number Accepted) / (Total Number)",
+        hist.GetNbinsX(),
+        hist.GetXaxis().GetXmin(),
+        hist.GetXaxis().GetXmax()
+    )
+    
+    # compute rate for each threshold value
+    for j in range(len(thresholds)):
+    
+        if axis==0:
+            # find bin that corresponds to current threshold
+            threshold_bin = hist.GetXaxis().FindBin(thresholds[j])
+        
+            # Integrate over bins where x > threshold
+            integral_partial = hist.Integral(
+                threshold_bin, hist.GetNbinsX() + 1,
+                0, hist.GetNbinsY() + 1,
+                0, hist.GetNbinsZ() + 1
+            )
+        else:
+            threshold_bin = hist.GetYaxis().FindBin(thresholds[j])
+        
+            integral_partial = hist.Integral(
+                0, hist.GetNbinsX() + 1,
+                threshold_bin, hist.GetNbinsY() + 1,
+                0, hist.GetNbinsZ() + 1
+            )
+            
+        # calculate uncertainty
+        uncertainty = np.sqrt(integral_partial)/integral
+        
+        # divide partial integral by total integral to get ratio
+        ratio_accepted = integral_partial/integral
+        
+        hist_out.SetBinContent(j+1, ratio_accepted)
+        hist_out.SetBinError(j+1, uncertainty)
+        
+
+    return hist_out
 
 ########################################################################
 def main(file_prefix, out_dir):
@@ -303,6 +369,46 @@ def main(file_prefix, out_dir):
     # names and associated print names of backgrounds
     bkg_names = ["ZeroBias", "SingleNeutrino_E-10-gun"]
     bkg_names_print = ["Zero Bias", "Single Neutrino Gun"]
+    
+    
+    ####################################################################
+    # get rate plot for HT                                             #
+    ####################################################################
+    
+    # create ROOT canvas
+    c = ROOT.TCanvas("c", "ROC", 1000, 800)
+    
+    # get score histogram from ZB file (cicada version doesn't matter
+    # since we are integrating over that axis
+    hist = f_bkg[0].Get(f"anomalyScore_ZeroBias_test_{cicada_names[0]}")
+            
+    # get accepted ratio histogram from above hist
+    h = getAcceptRatioHist(hist, 1, hist_name = "HT")
+    
+    # scale by rate factor
+    h.Scale(rate_scale_factor)
+    
+    # plotting options
+    h.SetTitle("")
+    h.GetXaxis().SetTitle("HT Threshold [GeV]")
+    h.GetYaxis().SetTitle("Zero Bias Rate [kHz]")
+    h.GetXaxis().SetRangeUser(0,300)
+    h.GetYaxis().SetRangeUser(5e-3,1e5)
+    h.SetStats(0)
+    h.SetMarkerColor(2)
+    h.SetMarkerStyle(20)
+    
+    # draw histogram
+    h.Draw("e")
+    
+    # draw and save canvas
+    c.SetLogy()
+    c.Draw()
+    c.SaveAs(f"{out_dir}/rate_ZeroBias_HT.png")
+    c.Close()
+
+
+    ####################################################################
     
     # get list of sample names
     sample_names = list(sample_name_dict.keys())
@@ -317,6 +423,41 @@ def main(file_prefix, out_dir):
                 h_zb = f_bkg[l].Get(f"anomalyScore_ZeroBias_test_{cicada_names[k]}")
             else:
                 h_zb = f_bkg[l].Get(f"anomalyScore_SingleNeutrino_E-10-gun_{cicada_names[k]}")
+                
+                
+            ############################################################
+            # get rate plot for current CICADA version                 #
+            ############################################################
+            
+            if bkg_names[l]=="ZeroBias":
+                # create ROOT canvas
+                c = ROOT.TCanvas("c", "ROC", 1000, 800)
+                
+                # get accepted ratio histogram from above hist
+                h = getAcceptRatioHist(h_zb, 0, hist_name = cicada_names[k])
+                
+                # scale by rate factor
+                h.Scale(rate_scale_factor)
+                
+                # plotting options
+                h.SetTitle("")
+                h.GetXaxis().SetTitle("CICADA score Threshold")
+                h.GetYaxis().SetTitle("Zero Bias Rate [kHz]")
+                h.GetXaxis().SetRangeUser(0,256)
+                h.GetYaxis().SetRangeUser(5e-3,1e5)
+                h.SetStats(0)
+                h.SetMarkerColor(2)
+                h.SetMarkerStyle(20)
+                
+                # draw histogram
+                h.Draw("e")
+                
+                # draw and save canvas
+                c.SetLogy()
+                c.Draw()
+                c.SaveAs(f"{out_dir}/rate_ZeroBias_{cicada_names[k]}.png")
+                c.Close()
+                
 
             # iterate through signal samples
             for i in range(len(sample_names)):
@@ -400,8 +541,8 @@ def main(file_prefix, out_dir):
                 # plot point for l1 unprescaled efficiency
                 l1_eff_s = getL1UnprescaledEfficiency(h_s)
                 l1_eff_zb = getL1UnprescaledEfficiency(h_zb)
-                print("L1 Unprescaled Signal Efficiency = ", l1_eff_s)
-                print("L1 Unprescaled Bkg Efficiency = ", l1_eff_zb)
+                print("L1 Unprescaled Signal (Number Accepted)/(Total) = ", l1_eff_s)
+                print("L1 Unprescaled Bkg (Number Accepted)/(Total) = ", l1_eff_zb)
                 g_l1 = ROOT.TGraph(1, array('d', [l1_eff_zb]), array('d', [l1_eff_s]))
                 g_l1.SetMarkerSize(1)
                 g_l1.SetMarkerStyle(20)
@@ -412,8 +553,8 @@ def main(file_prefix, out_dir):
                 # plot point for HT>200
                 ht_eff_s = getHTEfficiency(h_s)
                 ht_eff_zb = getHTEfficiency(h_zb)
-                print("HT>200 Signal Efficiency = ", ht_eff_s)
-                print("HT>200 Bkg Efficiency = ", ht_eff_zb)
+                print("HT>200 Signal (Number Accepted)/(Total) = ", ht_eff_s)
+                print("HT>200 Bkg (Number Accepted)/(Total) = ", ht_eff_zb)
                 g_ht_point = ROOT.TGraph(1, array('d', [ht_eff_zb]), array('d', [ht_eff_s]))
                 g_ht_point.SetMarkerSize(1)
                 g_ht_point.SetMarkerColor(4)
@@ -474,8 +615,8 @@ def main(file_prefix, out_dir):
                 # plot point for l1 unprescaled efficiency
                 l1_eff_s = getL1UnprescaledEfficiency(h_s)
                 l1_eff_zb = getL1UnprescaledEfficiency(h_zb)
-                print("L1 Unprescaled Signal Efficiency = ", l1_eff_s)
-                print("L1 Unprescaled Bkg Efficiency = ", l1_eff_zb)
+                print("L1 Unprescaled Signal (Number Accepted)/(Total) = ", l1_eff_s)
+                print("L1 Unprescaled Bkg (Number Accepted)/(Total) = ", l1_eff_zb)
                 g_l1 = ROOT.TGraph(1, array('d', [l1_eff_zb]), array('d', [l1_eff_s]))
                 g_l1.SetMarkerSize(1)
                 g_l1.SetMarkerStyle(20)
@@ -487,7 +628,7 @@ def main(file_prefix, out_dir):
                 legend = ROOT.TLegend(0.1,0.77,0.9, 0.9)
                 legend.AddEntry(g_or, "(CICADA > Threshold) or (Passed an Unprescaled L1 Trigger)")
                 legend.AddEntry(g_cicada, "CICADA > Threshold")
-                legend.AddEntry(g_l1, "Unprescaled Trigger Efficiency", "p")
+                legend.AddEntry(g_l1, "Unprescaled Trigger", "p")
                 legend.SetBorderSize(0)
                 legend.SetFillStyle(0)
                 legend.SetTextSize(0.025)
