@@ -114,6 +114,9 @@ def calculateROC(bkg_hist, sig_hist, axis):
         tpr.append(tpr_current)
         fpr.append(fpr_current)
 
+        if (tpr_current==0) && (fpr_current==0):
+            break
+
     # convert to array
     tpr = array('d', tpr)
     fpr = array('d', fpr)
@@ -242,6 +245,9 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
 
         tpr.append(tpr_current)
         fpr.append(fpr_current)
+
+        if (tpr_current==0) && (fpr_current==0):
+            break
 
     # convert to arrays
     tpr = array('d', tpr)
