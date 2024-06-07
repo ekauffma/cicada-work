@@ -13,6 +13,7 @@ from sampleNames import sample_name_dict
 
 max_eff_val_x = 0.00344054 * 2
 max_eff_val_x = 0.03 # x axis range, set for debugging purposes
+#max_eff_val_x = 1.0
 max_eff_val_y = 1.2 # y axis range, gives extra room for legend
 
 # convert from efficiency to rate
@@ -65,19 +66,23 @@ def calculateROC(bkg_hist, sig_hist, axis):
                           0, sig_hist.GetNbinsZ()+1)
     )
 
+
     # get list of thresholds
-    edges = [sig_hist.GetXaxis().GetBinLowEdge(i) for i in range(1, sig_hist.GetNbinsX() + 2)]
+    if axis==0:
+        edges = [sig_hist.GetXaxis().GetBinLowEdge(i) for i in range(1, sig_hist.GetNbinsX() + 2)]
+    else:
+        edges = [sig_hist.GetYaxis().GetBinLowEdge(i) for i in range(1, sig_hist.GetNbinsY() + 2)]
 
     tpr = []
     fpr = []
     # compute FPR and TPR for each threshold value
     for threshold in edges:
-    
-        # find bin that corresponds to current threshold
-        threshold_bin = sig_hist.GetXaxis().FindBin(threshold)
 
-        # compute partial integrals for accepted events
         if axis==0:
+            # find bin that corresponds to current threshold
+            threshold_bin = sig_hist.GetXaxis().FindBin(threshold)
+
+            # compute partial integrals for accepted events
             integral_sig_partial = sig_hist.Integral(
                 threshold_bin, sig_hist.GetNbinsX() + 1,
                 0, sig_hist.GetNbinsY()+1,
@@ -89,6 +94,8 @@ def calculateROC(bkg_hist, sig_hist, axis):
                 0, bkg_hist.GetNbinsZ()+1
             )
         else:
+            threshold_bin = sig_hist.GetYaxis().FindBin(threshold)
+
             integral_sig_partial = sig_hist.Integral(
                 0, sig_hist.GetNbinsX() + 1,
                 threshold_bin, sig_hist.GetNbinsY()+1,
@@ -139,7 +146,7 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
 
     if or_axis not in [1,2]:
         raise ValueError("or_axis must be 1 or 2")
-        
+
     # compute bin associated with or_threshold
     if or_axis == 1:
         or_threshold_bin = sig_hist.GetYaxis().FindBin(or_threshold)
@@ -180,7 +187,7 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
                 or_threshold_bin, bkg_hist.GetNbinsY() + 1,
                 0, bkg_hist.GetNbinsZ() + 1
             )
-            
+
             # Compute the double-counted accepted events,
             # including overlap and overflow bins
             overlap_sig = sig_hist.Integral(
@@ -207,7 +214,7 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
                 0, bkg_hist.GetNbinsY() + 1,
                 or_threshold_bin, bkg_hist.GetNbinsZ() + 1
             )
-            
+
             # Compute the double-counted accepted events,
             # including overlap and overflow bins
             overlap_sig = sig_hist.Integral(
@@ -289,7 +296,7 @@ def getHTEfficiency(hist):
     n_numerator = hist.Integral(0, hist.GetNbinsX()+1, ht_threshold_bin, hist.GetNbinsY()+1, 0, hist.GetNbinsZ()+1)
 
     return n_numerator / n_denominator
-    
+
 ########################################################################
 # Uses the 3d input histogram hist (zero bias) to calculate the ratio of
 # accepted events to total events for each threshold. This is done for
@@ -308,29 +315,39 @@ def getAcceptRatioHist(hist, axis, hist_name = "ratio_accepted"):
             0, hist.GetNbinsZ()+1
         )
     )
-        
+
     # get list of thresholds
     if axis==0:
         thresholds = [hist.GetXaxis().GetBinLowEdge(i) for i in range(1, hist.GetNbinsX() + 2)]
+
+        # create efficiency hist
+        hist_out = ROOT.TH1D(
+            hist_name,
+            "(Number Accepted) / (Total Number)",
+            hist.GetNbinsX(),
+            hist.GetXaxis().GetXmin(),
+            hist.GetXaxis().GetXmax()
+        )
+
     else:
         thresholds = [hist.GetYaxis().GetBinLowEdge(i) for i in range(1, hist.GetNbinsY() + 2)]
-                      
-    # create efficiency hist
-    hist_out = ROOT.TH1D(
-        hist_name,
-        "(Number Accepted) / (Total Number)",
-        hist.GetNbinsX(),
-        hist.GetXaxis().GetXmin(),
-        hist.GetXaxis().GetXmax()
-    )
-    
+
+        # create efficiency hist
+        hist_out = ROOT.TH1D(
+            hist_name,
+            "(Number Accepted) / (Total Number)",
+            hist.GetNbinsY(),
+            hist.GetYaxis().GetXmin(),
+            hist.GetYaxis().GetXmax()
+        )
+
     # compute rate for each threshold value
     for j in range(len(thresholds)):
-    
+
         if axis==0:
             # find bin that corresponds to current threshold
             threshold_bin = hist.GetXaxis().FindBin(thresholds[j])
-        
+
             # Integrate over bins where x > threshold
             integral_partial = hist.Integral(
                 threshold_bin, hist.GetNbinsX() + 1,
@@ -339,22 +356,22 @@ def getAcceptRatioHist(hist, axis, hist_name = "ratio_accepted"):
             )
         else:
             threshold_bin = hist.GetYaxis().FindBin(thresholds[j])
-        
+
             integral_partial = hist.Integral(
                 0, hist.GetNbinsX() + 1,
                 threshold_bin, hist.GetNbinsY() + 1,
                 0, hist.GetNbinsZ() + 1
             )
-            
+
         # calculate uncertainty
         uncertainty = np.sqrt(integral_partial)/integral
-        
+
         # divide partial integral by total integral to get ratio
         ratio_accepted = integral_partial/integral
-        
-        hist_out.SetBinContent(j+1, ratio_accepted)
+
+        hist_out.SetBinContent(j+1, ratio_accepted * rate_scale_factor)
         hist_out.SetBinError(j+1, uncertainty)
-        
+
 
     return hist_out
 
@@ -365,42 +382,42 @@ def main(file_prefix, out_dir):
     f_zb = ROOT.TFile(f"{file_prefix}_ZeroBias.root")
     f_sn = ROOT.TFile(f"{file_prefix}_SingleNeutrino_E-10-gun.root")
     f_bkg = [f_zb, f_sn]
-    
+
     # names and associated print names of backgrounds
     bkg_names = ["ZeroBias", "SingleNeutrino_E-10-gun"]
     bkg_names_print = ["Zero Bias", "Single Neutrino Gun"]
-    
-    
+
+
     ####################################################################
     # get rate plot for HT                                             #
     ####################################################################
-    
+
     # create ROOT canvas
     c = ROOT.TCanvas("c", "ROC", 1000, 800)
-    
+
     # get score histogram from ZB file (cicada version doesn't matter
     # since we are integrating over that axis
     hist = f_bkg[0].Get(f"anomalyScore_ZeroBias_test_{cicada_names[0]}")
-            
+
     # get accepted ratio histogram from above hist
     h = getAcceptRatioHist(hist, 1, hist_name = "HT")
-    
+
     # scale by rate factor
-    h.Scale(rate_scale_factor)
-    
+    #h.Scale(rate_scale_factor)
+
     # plotting options
     h.SetTitle("")
     h.GetXaxis().SetTitle("HT Threshold [GeV]")
     h.GetYaxis().SetTitle("Zero Bias Rate [kHz]")
-    h.GetXaxis().SetRangeUser(0,300)
-    h.GetYaxis().SetRangeUser(5e-3,1e5)
+    h.GetXaxis().SetRangeUser(0,1000)
+    h.GetYaxis().SetRangeUser(1e-1,1e5)
     h.SetStats(0)
     h.SetMarkerColor(2)
     h.SetMarkerStyle(20)
-    
+
     # draw histogram
     h.Draw("e")
-    
+
     # draw and save canvas
     c.SetLogy()
     c.Draw()
@@ -409,7 +426,7 @@ def main(file_prefix, out_dir):
 
 
     ####################################################################
-    
+
     # get list of sample names
     sample_names = list(sample_name_dict.keys())
 
@@ -423,22 +440,22 @@ def main(file_prefix, out_dir):
                 h_zb = f_bkg[l].Get(f"anomalyScore_ZeroBias_test_{cicada_names[k]}")
             else:
                 h_zb = f_bkg[l].Get(f"anomalyScore_SingleNeutrino_E-10-gun_{cicada_names[k]}")
-                
-                
+
+
             ############################################################
             # get rate plot for current CICADA version                 #
             ############################################################
-            
+
             if bkg_names[l]=="ZeroBias":
                 # create ROOT canvas
                 c = ROOT.TCanvas("c", "ROC", 1000, 800)
-                
+
                 # get accepted ratio histogram from above hist
                 h = getAcceptRatioHist(h_zb, 0, hist_name = cicada_names[k])
-                
+
                 # scale by rate factor
-                h.Scale(rate_scale_factor)
-                
+                #h.Scale(rate_scale_factor)
+
                 # plotting options
                 h.SetTitle("")
                 h.GetXaxis().SetTitle("CICADA score Threshold")
@@ -448,16 +465,16 @@ def main(file_prefix, out_dir):
                 h.SetStats(0)
                 h.SetMarkerColor(2)
                 h.SetMarkerStyle(20)
-                
+
                 # draw histogram
                 h.Draw("e")
-                
+
                 # draw and save canvas
                 c.SetLogy()
                 c.Draw()
                 c.SaveAs(f"{out_dir}/rate_ZeroBias_{cicada_names[k]}.png")
                 c.Close()
-                
+
 
             # iterate through signal samples
             for i in range(len(sample_names)):
@@ -465,7 +482,7 @@ def main(file_prefix, out_dir):
                 # skip over the samples that are not signal
                 if sample_names[i]=="ZeroBias": continue
                 if sample_names[i]=="SingleNeutrino_E-10-gun": continue
-                
+
                 # for testing, only making one plot
                 if sample_names[i]!="TT_TuneCP5_13p6TeV_powheg-pythia8": continue
 
