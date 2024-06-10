@@ -15,10 +15,10 @@ import awkward as ak
 
 
 # names of CICADA models
-cicada_names = ["CICADA_v1p2p2"]
-                #"CICADA_v2p2p2",
-                #"CICADA_v1p2p2N",
-                #"CICADA_v2p2p2N"]
+cicada_names = ["CICADA_v1p2p2",
+                "CICADA_v2p2p2",
+                "CICADA_v1p2p2N",
+                "CICADA_v2p2p2N"]
 
 # minimum and maximum scores for histogram
 min_score_cicada = 0.0

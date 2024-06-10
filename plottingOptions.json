@@ -1,0 +1,26 @@
+{
+    "ROC_x_max": 0.00344054,
+    "ROC_y_max": 1.2,
+    "rate_scale_factor": 27572.74,
+    "ht_threshold": 200,
+    "l1_threshold": 1,
+    "cicada_names": [
+        "CICADA_v1p2p2",
+        "CICADA_v2p2p2",
+        "CICADA_v1p2p2N",
+        "CICADA_v2p2p2N"
+    ],
+    "sample_shortlist": [
+        "GluGluHToBB_M-125_TuneCP5_13p6TeV_powheg-pythia8",
+        "GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8",
+        "HHHTo6B_c3_0_d4_0_TuneCP5_13p6TeV_amcatnlo-pythia8",
+        "HTo2LongLivedTo4b_MH-350_MFF-80_CTau-1000mm_TuneCP5_13p6TeV-pythia8",
+        "SUEP",
+        "SUSYGluGluToBBHToBB_NarrowWidth_M-350_TuneCP5_13p6TeV-pythia8",
+        "ttHto2C_M-125_TuneCP5_13p6TeV_powheg-pythia8",
+        "VBFHToInvisible_M-125_TuneCP5_13p6TeV_powheg-pythia8",
+        "TT_TuneCP5_13p6TeV_powheg-pythia8"
+    ],
+    "shortlist_colors": [2, 95, 92, 72, 209, 4, 65, 51, 6],
+    "shortlist_markers": [33, 22, 23, 21, 25, 34, 26, 27, 28]
+}
