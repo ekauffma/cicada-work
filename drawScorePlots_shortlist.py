@@ -10,37 +10,15 @@ import argparse
 import numpy as np
 from array import array
 from sampleNames import sample_name_dict
+import json
+from plottingUtils import convertCICADANametoPrint, createLabel
 
-# list of samples for the shortlist
-sample_list = [
-    "GluGluHToBB_M-125_TuneCP5_13p6TeV_powheg-pythia8",
-    "GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8",
-    "HHHTo6B_c3_0_d4_0_TuneCP5_13p6TeV_amcatnlo-pythia8",
-    "HTo2LongLivedTo4b_MH-350_MFF-80_CTau-1000mm_TuneCP5_13p6TeV-pythia8",
-    "SUEP",
-    "SUSYGluGluToBBHToBB_NarrowWidth_M-350_TuneCP5_13p6TeV-pythia8",
-    "ttHto2C_M-125_TuneCP5_13p6TeV_powheg-pythia8",
-    "VBFHToInvisible_M-125_TuneCP5_13p6TeV_powheg-pythia8",
-    "TT_TuneCP5_13p6TeV_powheg-pythia8"
-]
+with open('plottingOptions.json') as f:
+    options = json.load(f)
+    
+def drawScorePlot(hist_bkg, sample_shortlist, cicada_name, file_prefix):
 
-# plot colors (for each sample)
-sample_colors = [2, 95, 92, 72, 209, 4, 65, 51, 6]
-marker_styles = [33, 22, 23, 21, 25, 34, 26, 27, 28]
-
-# function for drawing the CMS label on the plots
-def createCMSLabel():
-	cmsLatex = ROOT.TLatex()
-	cmsLatex.SetTextSize(0.04)
-	cmsLatex.SetNDC(True)
-	cmsLatex.SetTextAlign(11)
-
-	return cmsLatex
-
-
-def main(file_prefix, output_dir, cicada_name):
-
-    f_zb = ROOT.TFile(f"{file_prefix}_ZeroBias.root")
+    print("Creating shortlist score plot for ", cicada_name)
 
     # create ROOT canvas
     c1 = ROOT.TCanvas("c1", "Anomaly Score", 1000,800)
@@ -58,55 +36,54 @@ def main(file_prefix, output_dir, cicada_name):
 
     # change directory into main pad
     pad1.cd()
-
-    # get zerobias histogram
-    hist_zerobias = f_zb.Get(f"anomalyScore_ZeroBias_{cicada_name}")
-
+    
     # change histogram style options and draw
-    hist_zerobias.GetYaxis().SetRangeUser(5e-1,1e7)
-    hist_zerobias.GetXaxis().SetRangeUser(0,256)
-    hist_zerobias.SetMarkerColor(1)
-    hist_zerobias.SetMarkerStyle(20)
-    hist_zerobias.SetStats(0)
-    hist_zerobias.SetTitle("")
-    hist_zerobias.GetYaxis().SetTitle("Frequency")
-    hist_zerobias.Draw("e")
+    hist_bkg.GetYaxis().SetRangeUser(5e-1,1e7)
+    hist_bkg.GetXaxis().SetRangeUser(0,256)
+    hist_bkg.SetMarkerColor(1)
+    hist_bkg.SetMarkerStyle(20)
+    hist_bkg.SetStats(0)
+    hist_bkg.SetTitle("")
+    hist_bkg.GetYaxis().SetTitle("Frequency")
+    hist_bkg.Draw("e")
 
     # create legend object and add ZeroBias
     legend = ROOT.TLegend(-0.08,0.2,1.0,0.95)
-    legend.AddEntry(hist_zerobias, "ZeroBias", "PE")
-
+    legend.AddEntry(hist_bkg, "Zero Bias", "PE")
+    
     # iterate through samples in shortlist
-    for i in range(len(sample_list)):
+    for i in range(len(sample_shortlist)):
 
-        f = ROOT.TFile(f"{file_prefix}_{sample_list[i]}.root")
+        f = ROOT.TFile(f"{file_prefix}_{sample_shortlist[i]}.root")
 
         # get sample histogram
         hist_sample = f.Get(
-            f"anomalyScore_{sample_list[i]}_{cicada_name}"
+            f"anomalyScore_{sample_shortlist[i]}_{cicada_name}"
         )
+        
+        hist_sig = hist_sample.ProjectionX()
 
         # change histogram style options and draw on same canvas
-        hist_sample.SetMarkerColor(sample_colors[i])
-        hist_sample.SetMarkerStyle(marker_styles[i])
-        hist_sample.SetLineColor(sample_colors[i])
-        hist_sample.SetStats(0)
-        hist_sample.SetTitle("")
-        hist_sample.Draw("e same")
+        hist_sig.SetMarkerColor(options["shortlist_colors"][i])
+        hist_sig.SetMarkerStyle(options["shortlist_markers"][i])
+        hist_sig.SetLineColor(options["shortlist_colors"][i])
+        hist_sig.SetStats(0)
+        hist_sig.SetTitle("")
+        hist_sig.Draw("e same")
 
         # add legend entry for current sample
-        legend.AddEntry(hist_sample,
-                        f"{sample_name_dict[sample_list[i]]}",
+        legend.AddEntry(hist_sig,
+                        f"{sample_name_dict[sample_shortlist[i]]}",
                         "PE")
 
         f.Close()
-
+        
     # draw cms label
-    cmsLatex = createCMSLabel()
+    cmsLatex = createLabel()
     cmsLatex.DrawLatex(0.1,
                        0.92,
                        "#font[61]{CMS} #font[52]{Preliminary}")
-
+    
     # set log scale on the same axis
     pad1.SetLogy()
 
@@ -136,7 +113,7 @@ def main(file_prefix, output_dir, cicada_name):
     g.GetYaxis().SetTitleSize(0.06)
     g.GetYaxis().SetTitleOffset(0.7)
     g.Draw("AC")
-
+    
     # create stack to store histograms for each sample
     hs = ROOT.THStack("hs","hs")
 
@@ -145,7 +122,7 @@ def main(file_prefix, output_dir, cicada_name):
 
         # get sample score hist
         hist_sample = f.Get(
-            f"anomalyScore_{sample_list[i]}_{cicada_name}"
+            f"anomalyScore_{sample_shortlist[i]}_{cicada_name}"
         )
         ratio_hist = hist_sample.Clone("ratio_hist")
         ratio_hist.Sumw2() # needed to calculate error bars
@@ -177,39 +154,28 @@ def main(file_prefix, output_dir, cicada_name):
     # draw, save, and close canvas
     c1.Draw()
     c1.SaveAs(
-        f"{output_dir}/scorehist_{sample_list[i]}_{cicada_name}.png"
+        f"{output_dir}/scorehist_{sample_shortlist[i]}_{cicada_name}.png"
     )
     c1.Close()
+    
+    return
 
-    # TODO: scale sample rate plots and add to this one
-    # create canvas for rate plot
-    c2 = ROOT.TCanvas("c2","Rate",1000,800)
 
-    # get zerobias rate hist
-    hist_zerobias = f.Get(f"rate_ZeroBias_{cicada_name}")
+def main(file_prefix, output_dir):
 
-    hist_zerobias.GetYaxis().SetRangeUser(5e-3,1e5)
-    hist_zerobias.GetXaxis().SetRangeUser(0,256)
-    hist_zerobias.SetMarkerColor(1)
-    hist_zerobias.SetMarkerStyle(20)
-    hist_zerobias.SetStats(0)
-    hist_zerobias.SetTitle("")
-    hist_zerobias.GetYaxis().SetTitle("Overall Rate [kHz]")
-    hist_zerobias.Draw("e")
+    f_zb = ROOT.TFile(f"{file_prefix}_ZeroBias.root")
+    
+    for i in range(len(options["cicada_names"])):
+    
+        c_name = options["cicada_names"][i]
 
-    # draw cms label
-    cmsLatex = createCMSLabel()
-    cmsLatex.DrawLatex(0.1,0.92, "#font[61]{CMS} #font[52]{Preliminary}")
+        # get zerobias histogram
+        hist_zerobias = f_zb.Get(f"anomalyScore_ZeroBias_test_{c_name}")
+        
+        drawScorePlot(hist_zerobias, options["sample_shortlist"], c_name, file_prefix)
 
-    # set log scale for this canvas
-    c2.SetLogy()
+    
 
-    # draw, save, and close
-    c2.Draw()
-    c2.SaveAs(
-        f"{output_dir}/rate_{sample_name_dict[sample_list[i]]}_{cicada_name}.png"
-    )
-    c2.Close()
 
 if __name__ == "__main__":
 
@@ -227,12 +193,7 @@ if __name__ == "__main__":
         default='./',
         help="directory to save output plots"
     )
-	parser.add_argument(
-        "-c",
-        "--cicada_name",
-        help="name of CICADA model"
-    )
 
 	args = parser.parse_args()
 
-	main(args.input_file, args.output_dir, args.cicada_name)
+	main(args.input_file, args.output_dir)
