@@ -15,8 +15,8 @@ from plottingUtils import convertCICADANametoPrint, createLabel
 
 with open('plottingOptions.json') as f:
     options = json.load(f)
-    
-def drawScorePlot(hist_bkg, sample_shortlist, cicada_name, file_prefix):
+
+def drawScorePlot(hist_bkg, sample_shortlist, cicada_name, file_prefix, out_dir):
 
     print("Creating shortlist score plot for ", cicada_name)
 
@@ -36,7 +36,7 @@ def drawScorePlot(hist_bkg, sample_shortlist, cicada_name, file_prefix):
 
     # change directory into main pad
     pad1.cd()
-    
+
     # change histogram style options and draw
     hist_bkg.GetYaxis().SetRangeUser(5e-1,1e7)
     hist_bkg.GetXaxis().SetRangeUser(0,256)
@@ -47,10 +47,12 @@ def drawScorePlot(hist_bkg, sample_shortlist, cicada_name, file_prefix):
     hist_bkg.GetYaxis().SetTitle("Frequency")
     hist_bkg.Draw("e")
 
+    print("    Drew ZeroBias histogram")
+
     # create legend object and add ZeroBias
     legend = ROOT.TLegend(-0.08,0.2,1.0,0.95)
     legend.AddEntry(hist_bkg, "Zero Bias", "PE")
-    
+
     # iterate through samples in shortlist
     for i in range(len(sample_shortlist)):
 
@@ -60,7 +62,7 @@ def drawScorePlot(hist_bkg, sample_shortlist, cicada_name, file_prefix):
         hist_sample = f.Get(
             f"anomalyScore_{sample_shortlist[i]}_{cicada_name}"
         )
-        
+
         hist_sig = hist_sample.ProjectionX()
 
         # change histogram style options and draw on same canvas
@@ -77,13 +79,15 @@ def drawScorePlot(hist_bkg, sample_shortlist, cicada_name, file_prefix):
                         "PE")
 
         f.Close()
-        
+
+        print("    Drew histogram for sample ", sample_shortlist[i])
+
     # draw cms label
     cmsLatex = createLabel()
     cmsLatex.DrawLatex(0.1,
                        0.92,
                        "#font[61]{CMS} #font[52]{Preliminary}")
-    
+
     # set log scale on the same axis
     pad1.SetLogy()
 
@@ -113,30 +117,42 @@ def drawScorePlot(hist_bkg, sample_shortlist, cicada_name, file_prefix):
     g.GetYaxis().SetTitleSize(0.06)
     g.GetYaxis().SetTitleOffset(0.7)
     g.Draw("AC")
-    
+
+    print("    Drew horizontal line in ratio plot")
+
     # create stack to store histograms for each sample
     hs = ROOT.THStack("hs","hs")
 
     # iterate again through samples in shortlist
-    for i in range(len(sample_list)):
+    for i in range(len(sample_shortlist)):
+
+        f = ROOT.TFile(f"{file_prefix}_{sample_shortlist[i]}.root")
 
         # get sample score hist
         hist_sample = f.Get(
             f"anomalyScore_{sample_shortlist[i]}_{cicada_name}"
         )
-        ratio_hist = hist_sample.Clone("ratio_hist")
+
+        hist_sig = hist_sample.ProjectionX()
+
+        ratio_hist = hist_sig.Clone("ratio_hist")
         ratio_hist.Sumw2() # needed to calculate error bars
-        hist_zerobias.Sumw2()
-        ratio_hist.Divide(hist_zerobias) # divide by zero bias
-        ratio_hist.SetMarkerStyle(marker_styles[i])
-        ratio_hist.SetMarkerColor(sample_colors[i])
-        ratio_hist.SetLineColor(sample_colors[i])
+        hist_bkg.Sumw2()
+        ratio_hist.Divide(hist_bkg) # divide by zero bias
+        ratio_hist.SetMarkerStyle(options["shortlist_markers"][i])
+        ratio_hist.SetMarkerColor(options["shortlist_colors"][i])
+        ratio_hist.SetLineColor(options["shortlist_colors"][i])
 
         # add to stack
         hs.Add(ratio_hist)
 
+        f.Close()
+
+        print("    Added ratio hist for sample ", sample_shortlist[i])
+
     # draw all histograms in the stack
     hs.Draw("e nostack same")
+    print("    drew ratio histogram stack")
     pad3.SetLogy()
 
     # change directory to legend pad
@@ -145,36 +161,42 @@ def drawScorePlot(hist_bkg, sample_shortlist, cicada_name, file_prefix):
     pad2.Draw()
     pad2.cd()
 
+    print("    created legend pad")
+
     # set legend styling and draw
     legend.SetTextSize(0.035)
     legend.SetBorderSize(0)
     legend.SetFillStyle(0)
     legend.Draw()
 
+    print("    drew legend")
+
     # draw, save, and close canvas
-    c1.Draw()
+    #c1.Draw()
+    print("    drew canvas")
     c1.SaveAs(
-        f"{output_dir}/scorehist_{sample_shortlist[i]}_{cicada_name}.png"
+        f"{out_dir}/scorehist_{sample_shortlist[i]}_{cicada_name}.png"
     )
+    print("    saved canvas")
     c1.Close()
-    
+
     return
 
 
 def main(file_prefix, output_dir):
 
     f_zb = ROOT.TFile(f"{file_prefix}_ZeroBias.root")
-    
+
     for i in range(len(options["cicada_names"])):
-    
+
         c_name = options["cicada_names"][i]
 
         # get zerobias histogram
         hist_zerobias = f_zb.Get(f"anomalyScore_ZeroBias_test_{c_name}")
-        
-        drawScorePlot(hist_zerobias, options["sample_shortlist"], c_name, file_prefix)
 
-    
+        drawScorePlot(hist_zerobias.ProjectionX(), options["sample_shortlist"], c_name, file_prefix, output_dir)
+
+
 
 
 if __name__ == "__main__":
