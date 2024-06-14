@@ -1,13 +1,13 @@
 {
     "ROC_x_max": 0.00344054,
-    "ROC_y_max": 1.2,
+    "ROC_x_min_log": 1e-5,
+    "ROC_y_max": 1.4,
+    "ROC_y_min_log": 1e-5,
     "rate_scale_factor": 27572.74,
-    "ht_threshold": 200,
+    "ht_threshold": 280,
     "l1_threshold": 1,
     "cicada_names": [
-        "CICADA_v1p2p2",
         "CICADA_v2p2p2",
-        "CICADA_v1p2p2N",
         "CICADA_v2p2p2N"
     ],
     "sample_shortlist": [

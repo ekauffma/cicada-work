@@ -10,7 +10,7 @@ with open('plottingOptions.json') as f:
 # converts cicada_name to plot print format (e.g. CICADA_v1p2p2 -> CICADA 1.2.2)
 def convertCICADANametoPrint(cicada_name):
     cicada_name = cicada_name.replace("_", " ")
-    cicada_name = cicada_name.replace("v", ".")
+    cicada_name = cicada_name.replace("v", "")
     cicada_name = cicada_name.replace("p", ".")
     return cicada_name
 
@@ -242,7 +242,19 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
 # indicates whether the TGraph will be the first graph on its respective
 # canvas, and bkg_name is either "Zero Bias" or "Single Neutrino Gun".
 # Returns the TGraph object
-def createROCTGraph(tpr, fpr, color = 1, markerstyle = 20, first = True, bkg_name = "Zero Bias"):
+def createROCTGraph(tpr, fpr, color = 1, markerstyle = 20, first = True,
+                    bkg_name = "Zero Bias",
+                    rate=True, logx = False, logy = False):
+
+    # determine minimum axis limits based on whether axis is log scale
+    if logx: min_x = options["ROC_x_min_log"]
+    else: min_x = 0
+    if logy: min_y = options["ROC_y_min_log"]
+    else: min_y = 0
+
+    # scale by rate factor if desired
+    if rate:
+        fpr = array('d', [n * options["rate_scale_factor"] for n in fpr])
 
     # create TGraph
     g = ROOT.TGraph(len(tpr), fpr, tpr)
@@ -255,11 +267,20 @@ def createROCTGraph(tpr, fpr, color = 1, markerstyle = 20, first = True, bkg_nam
     g.SetMarkerSize(1)
     g.SetMarkerStyle(markerstyle)
     if first:
-        g.GetXaxis().SetTitle(f"{bkg_name} FPR (Number Accepted)/(Total)")
-        g.GetYaxis().SetTitle("Signal TPR (Number Accepted)/(Total)")
-    g.GetXaxis().SetRangeUser(0, options["ROC_x_max"])
-    g.GetXaxis().SetLimits(0, options["ROC_x_max"])
-    g.GetYaxis().SetRangeUser(0, options["ROC_y_max"])
+        if rate:
+            g.GetXaxis().SetTitle(f"{bkg_name} Rate [kHz]")
+            g.GetYaxis().SetTitle("Signal Efficiency")
+        else:
+            g.GetXaxis().SetTitle(f"{bkg_name} FPR (Number Accepted)/(Total)")
+            g.GetYaxis().SetTitle("Signal TPR (Number Accepted)/(Total)")
+
+    if rate:
+        g.GetXaxis().SetRangeUser(min_x * options["rate_scale_factor"], options["ROC_x_max"] * options["rate_scale_factor"])
+        g.GetXaxis().SetLimits(min_x * options["rate_scale_factor"], options["ROC_x_max"] * options["rate_scale_factor"])
+    else:
+        g.GetXaxis().SetRangeUser(min_x, options["ROC_x_max"])
+        g.GetXaxis().SetLimits(min_x, options["ROC_x_max"])
+    g.GetYaxis().SetRangeUser(min_y, options["ROC_y_max"])
 
     return g
 
