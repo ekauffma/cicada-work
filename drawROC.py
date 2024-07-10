@@ -10,11 +10,22 @@ import argparse
 import numpy as np
 from array import array
 from sampleNames import sample_name_dict
-from plottingUtils import convertCICADANametoPrint, createLabel, calculateROC, calculateROCOR, createROCTGraph, getL1UnprescaledEfficiency, getHTEfficiency, getAcceptRatioHist
+from plottingUtils import convertCICADANametoPrint, createLabel, calculateROC, calculateROCPt, calculateROCOR, createROCTGraph, getL1UnprescaledEfficiency, getHTEfficiency, getAcceptRatioHist
 import json
 
 with open('plottingOptions.json') as f:
     options = json.load(f)
+
+def findClosestY(graph, x_point):
+    n_points = graph.GetN()
+    x_values = np.array(graph.GetX())
+    y_values = np.array(graph.GetY())
+
+    differences = np.abs(x_values - x_point)
+    closest_index = np.argmin(differences)
+
+    return y_values[closest_index]
+
 
 ########################################################################
 # creates a rate plot for HT from the file f_bkg which has events from
@@ -253,7 +264,7 @@ def plotROCL1Shortlist(hist_bkg, out_dir, bkg_name, sample_shortlist, cicada_nam
 # arrays for the OR ROC (fpr_or_ht, tpr_or_ht), cicada (tpr_cicada,
 # fpr_cicada), and ht (tpr_ht, fpr_ht). Saves plots to out_dir
 def plotHTOR(hist_sig, hist_bkg,
-             fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht,
+             fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_ht,
              out_dir, bkg_name, cicada_name, sample_name,
              logx = False, logy = False):
 
@@ -267,7 +278,7 @@ def plotHTOR(hist_sig, hist_bkg,
     # create ROOT canvas
     c = ROOT.TCanvas("c", "ROC", 1000, 800)
 
-    # draw TGraph for HT OR CICADA score
+    # get TGraph for HT OR CICADA score
     g_or = createROCTGraph(tpr_or_ht,
                            fpr_or_ht,
                            color = 6,
@@ -277,9 +288,8 @@ def plotHTOR(hist_sig, hist_bkg,
                            logx = logx,
                            logy = logy)
     g_or.GetXaxis().SetRangeUser(min_x * options["rate_scale_factor"], options["ROC_x_max"] * options["rate_scale_factor"])
-    g_or.Draw("AC")
 
-    # draw TGraph for CICADA score
+    # get TGraph for CICADA score
     g_cicada = createROCTGraph(tpr_cicada,
                                fpr_cicada,
                                color = 8,
@@ -287,9 +297,8 @@ def plotHTOR(hist_sig, hist_bkg,
                                first = False,
                                logx = logx,
                                logy = logy)
-    g_cicada.Draw("C same")
 
-    # draw TGraph for HT
+    # get TGraph for HT
     g_ht = createROCTGraph(tpr_ht,
                            fpr_ht,
                            color = 9,
@@ -297,7 +306,27 @@ def plotHTOR(hist_sig, hist_bkg,
                            first = False,
                            logx = logx,
                            logy = logy)
+      
+    # get TGraph for jet pT
+    g_pt = createROCTGraph(tpr_pt,
+                           fpr_pt,
+                           color = 4,
+                           markerstyle = 23,
+                           first = False,
+                           logx = logx,
+                           logy = logy)
+
+    # set y max and draw graphs
+    max_or = findClosestY(g_or, options["ROC_x_max"] * options["rate_scale_factor"])
+    max_cicada = findClosestY(g_cicada, options["ROC_x_max"] * options["rate_scale_factor"])
+    max_ht = findClosestY(g_ht, options["ROC_x_max"] * options["rate_scale_factor"])
+    max_pt = findClosestY(g_pt, options["ROC_x_max"] * options["rate_scale_factor"])
+    max_all = max(max(max_or, max_cicada), max(max_ht, max_pt))
+    g_or.GetYaxis().SetRangeUser(0, 1.5*max_all)
+    g_or.Draw("AC")
+    g_cicada.Draw("C same")
     g_ht.Draw("C same")
+    g_pt.Draw("C same")
 
     # draw graph title
     title_template = "#splitline{{Signal = {str_sig}}}{{CICADA Version = {str_cic}}}"
@@ -345,9 +374,10 @@ def plotHTOR(hist_sig, hist_bkg,
     legend.AddEntry(g_or, legend_str, "l")
     legend.AddEntry(g_cicada, "CICADA > Threshold", "l")
     legend.AddEntry(g_ht, "HT > Threshold", "l")
+    legend.AddEntry(g_pt, "Jet PT > Threshold", "l")
     legend.SetBorderSize(0)
     legend.SetFillStyle(0)
-    legend.SetTextSize(0.023)
+    legend.SetTextSize(0.022)
     legend.Draw()
 
     legend2 = ROOT.TLegend(0.56, 0.73, 0.85, 0.8)
@@ -402,7 +432,6 @@ def plotL1OR(hist_sig, hist_bkg,
                            logx = logx,
                            logy = logy)
     g_or.GetXaxis().SetRangeUser(0, options["ROC_x_max"] * options["rate_scale_factor"])
-    g_or.Draw("AC")
 
     # draw TGraph for CICADA score
     g_cicada = createROCTGraph(tpr_cicada,
@@ -412,13 +441,18 @@ def plotL1OR(hist_sig, hist_bkg,
                                first = False,
                                logx = logx,
                                logy = logy)
+
+    max_or = findClosestY(g_or, options["ROC_x_max"] * options["rate_scale_factor"])
+    max_cicada = findClosestY(g_cicada, options["ROC_x_max"] * options["rate_scale_factor"])
+    max_all = max(max_or, max_cicada)
+    g_or.GetYaxis().SetRangeUser(0, 1.5*max_all)
+    g_or.Draw("AC")
     g_cicada.Draw("C same")
 
-        # draw graph title
+    # draw graph title
     title_template = "#splitline{{Signal = {str_sig}}}{{CICADA Version = {str_cic}}}"
     title = title_template.format(str_sig = sample_name_dict[sample_name], str_cic = convertCICADANametoPrint(cicada_name))
     titleObj = createLabel()
-    titleObj.DrawLatex(0.13, 0.85, title)
 
     # draw cms label
     cmsLatex = createLabel()
@@ -436,8 +470,8 @@ def plotL1OR(hist_sig, hist_bkg,
     g_l1 = ROOT.TGraph(1, array('d', [l1_eff_zb * options["rate_scale_factor"]]), array('d', [l1_eff_s]))
     g_l1.SetMarkerSize(1)
     g_l1.SetMarkerStyle(20)
-    g_l1.GetXaxis().SetRangeUser(x_min * options["rate_scale_factor"], options["ROC_x_max"] * options["rate_scale_factor"])
-    g_l1.GetYaxis().SetRangeUser(y_min, options["ROC_y_max"])
+    g_l1.GetXaxis().SetRangeUser(min_x * options["rate_scale_factor"], options["ROC_x_max"] * options["rate_scale_factor"])
+    g_l1.GetYaxis().SetRangeUser(min_y, options["ROC_y_max"])
     g_l1.Draw("P same")
 
     # draw legend
@@ -467,13 +501,14 @@ def plotL1OR(hist_sig, hist_bkg,
 # sample sample_name from events from background bkg_name. Uses
 # background histogram hist_bkg and signal histogram hist_sig. Saves
 # plots to out_dir
-def createIndividualROCPlots(hist_bkg, hist_sig, out_dir, bkg_name, cicada_name, sample_name):
+def createIndividualROCPlots(hist_bkg, hist_sig, hist_bkg_pt, hist_sig_pt, out_dir, bkg_name, cicada_name, sample_name):
 
     print(f"Creating ROC plots for sample {sample_name}")
 
     # calculate simple ROC for CICADA score and HT
     tpr_cicada, fpr_cicada = calculateROC(hist_bkg, hist_sig, 0)
     tpr_ht, fpr_ht = calculateROC(hist_bkg, hist_sig, 1)
+    tpr_jetpt, fpr_jetpt = calculateROCPt(hist_bkg_pt, hist_sig_pt)
 
     # calculate ROC for CICADA score > threshold OR HT > ht_threshold
     try:
@@ -489,25 +524,25 @@ def createIndividualROCPlots(hist_bkg, hist_sig, out_dir, bkg_name, cicada_name,
 
     # plot ROC for CICADA score > threshold OR HT > ht_threshold
     plotHTOR(hist_sig, hist_bkg,
-             fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht,
+             fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_ht
              out_dir, bkg_name, cicada_name, sample_name)
-    plotHTOR(hist_sig, hist_bkg,
-             fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht,
-             out_dir, bkg_name, cicada_name, sample_name, logx=True)
-    plotHTOR(hist_sig, hist_bkg,
-             fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht,
-             out_dir, bkg_name, cicada_name, sample_name, logx=True, logy=True)
+    #plotHTOR(hist_sig, hist_bkg,
+             #fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_ht
+             #out_dir, bkg_name, cicada_name, sample_name, logx=True)
+    #plotHTOR(hist_sig, hist_bkg,
+             #fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_ht
+             #out_dir, bkg_name, cicada_name, sample_name, logx=True, logy=True)
 
     # plot ROC for CICADA score > threshold OR L1 Trigger
     plotL1OR(hist_sig, hist_bkg,
              fpr_or_l1, tpr_or_l1, tpr_cicada, fpr_cicada,
              out_dir, bkg_name, cicada_name, sample_name)
-    plotL1OR(hist_sig, hist_bkg,
-             fpr_or_l1, tpr_or_l1, tpr_cicada, fpr_cicada,
-             out_dir, bkg_name, cicada_name, sample_name, logx=True)
-    plotL1OR(hist_sig, hist_bkg,
-             fpr_or_l1, tpr_or_l1, tpr_cicada, fpr_cicada,
-             out_dir, bkg_name, cicada_name, sample_name, logx=True, logy=True)
+    #plotL1OR(hist_sig, hist_bkg,
+             #fpr_or_l1, tpr_or_l1, tpr_cicada, fpr_cicada,
+             #out_dir, bkg_name, cicada_name, sample_name, logx=True)
+    #plotL1OR(hist_sig, hist_bkg,
+             #fpr_or_l1, tpr_or_l1, tpr_cicada, fpr_cicada,
+             #out_dir, bkg_name, cicada_name, sample_name, logx=True, logy=True)
 
 
 
@@ -544,8 +579,10 @@ def main(file_prefix, out_dir):
             # load ZeroBias histograms
             if bkg_names[l]=="ZeroBias":
                 h_zb = f_bkg[l].Get(f"anomalyScore_ZeroBias_test_{c_name}")
+                h_zb_pt = f_bkg_pt[l].Get(f"jetEt_ZeroBias_test_{c_name}")
             else:
                 h_zb = f_bkg[l].Get(f"anomalyScore_SingleNeutrino_E-10-gun_{c_name}")
+                h_zb_pt = f_bkg_pt[l].Get(f"jetEt_SingleNeutrino_E-10-gun_{c_name}")
 
             # get rate plot for current CICADA version
             if bkg_names[l]=="ZeroBias":
@@ -574,9 +611,10 @@ def main(file_prefix, out_dir):
 
                 # load histograms
                 h_s = f_s.Get(f"anomalyScore_{sample_names[i]}_{c_name}")
+                h_s_pt = f_s.Get(f"jetEt_{sample_names[i]}_{c_name}")
 
                 # plot ROCs
-                createIndividualROCPlots(h_zb, h_s, out_dir, bkg_names[l], c_name, sample_names[i])
+                createIndividualROCPlots(h_zb, h_s, h_zb_pt, h_s_pt, out_dir, bkg_names[l], c_name, sample_names[i])
 
 
 

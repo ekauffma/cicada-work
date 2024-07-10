@@ -23,13 +23,16 @@ cicada_names = ["CICADA_v1p2p2",
 # minimum and maximum scores for histogram
 min_score_cicada = 0.0
 max_score_cicada = 1024.0
-n_bins_cicada = 300
+n_bins_cicada = 400
 min_score_ht = 0.0
 max_score_ht = 2000.0
-n_bins_ht = 200
+n_bins_ht = 300
 min_score_trig = -0.5
 max_score_trig = 1.5
 n_bins_trig = 2
+min_score_pt = 0.0
+max_score_pt = 100.0
+n_bins_pt = 200
 
 
 # Create a C++ lambda function for OR operation as a string
@@ -118,6 +121,13 @@ def main(out_prefix):
     # create column for whether events pass any unprescaled triggers
     zero_bias = zero_bias.Define("L1UnprescaledOR", function_call)
 
+    zero_bias = zero_bias.Define("leadJetEt", """
+    auto leadingJetEt = [](const ROOT::RVec<float>& jetEt) {
+        return jetEt.size() > 0 ? jetEt[0] : -1.0f;
+    };
+    return leadingJetEt(jetEt);
+""", ["L1Upgrade/jetEt"])
+
     # separate out test and train data
     zero_bias_test = zero_bias.Filter('lumi % 2 == 1')
     zero_bias_train = zero_bias.Filter('lumi % 2 == 0')
@@ -184,6 +194,28 @@ def main(out_prefix):
         )
         hist.Write()
 
+        histModel = ROOT.RDF.TH1DModel(
+            f"jetEt_ZeroBias_test_{cicada_names[i]}",
+            f"jetEt_ZeroBias_test_{cicada_names[i]}",
+            n_bins_pt,
+            min_score_pt,
+            max_score_pt
+        )
+
+        hist = zero_bias_test.Filter("leadJetEt >= 0").Histo1D(histModel, "leadJetEt")
+        hist.Write()
+
+        histModel = ROOT.RDF.TH1DModel(
+            f"jetEt_ZeroBias_train_{cicada_names[i]}",
+            f"jetEt_ZeroBias_train_{cicada_names[i]}",
+            n_bins_pt,
+            min_score_pt,
+            max_score_pt
+        )
+
+        hist = zero_bias_train.Filter("leadJetEt >= 0").Histo1D(histModel, "leadJetEt")
+        hist.Write()
+
     output_file.Write()
     output_file.Close()
 
@@ -198,6 +230,13 @@ def main(out_prefix):
         rdf = rdf.Define("HT", "sumEt[sum_mask]")
 
         rdf = rdf.Define("L1UnprescaledOR", function_call)
+
+        rdf = rdf.Define("leadJetEt", """
+    auto leadingJetEt = [](const ROOT::RVec<float>& jetEt) {
+        return jetEt.size() > 0 ? jetEt[0] : -1.0f;
+    };
+    return leadingJetEt(jetEt);
+""", ["L1Upgrade/jetEt"])
 
         l1unprescaledor = rdf.AsNumpy(columns=["L1UnprescaledOR"])
         print("    Sig Efficiency = ", sum(l1unprescaledor["L1UnprescaledOR"])/len(l1unprescaledor["L1UnprescaledOR"]))
@@ -228,6 +267,17 @@ def main(out_prefix):
             )
             print("        Bin Content Example 1 = ", hist.GetBinContent(10, 2, 2))
             print("        Bin Content Example 2 = ", hist.GetBinContent(5, 1, 1))
+            hist.Write()
+
+            histModel = ROOT.RDF.TH1DModel(
+                f"jetEt_{sample_names[k]}_{cicada_names[i]}",
+                f"jetEt_{sample_names[k]}_{cicada_names[i]}",
+                n_bins_pt,
+                min_score_pt,
+                max_score_pt
+            )
+
+            hist = rdf.Filter("leadJetEt >= 0").Histo1D(histModel, "leadJetEt")
             hist.Write()
 
         output_file.Write()

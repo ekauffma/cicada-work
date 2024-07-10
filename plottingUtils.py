@@ -234,6 +234,190 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
     fpr = array('d', fpr)
 
     return tpr, fpr
+    
+########################################################################
+# Uses two 3d histograms (bkg_hist for background, sig_hist for signal)
+# to compute the ROC along for jet pT (which is in a separate histogram
+# than HT and CICADA)
+def calculateROCPt(bkg_hist, sig_hist):
+
+    # get total integral of background histogram
+    integral_bkg = float(
+        bkg_hist.Integral(0, bkg_hist.GetNbinsX()+1)
+    )
+
+    # get total integral of signal histogram
+    integral_sig = float(
+        sig_hist.Integral(0, sig_hist.GetNbinsX()+1)
+    )
+
+
+    # get list of thresholds
+    edges = [sig_hist.GetXaxis().GetBinLowEdge(i) for i in range(1, sig_hist.GetNbinsX() + 2)]
+
+    tpr = []
+    fpr = []
+    # compute FPR and TPR for each threshold value
+    for threshold in edges:
+
+        # find bin that corresponds to current threshold
+        threshold_bin = sig_hist.GetXaxis().FindBin(threshold)
+
+        # compute partial integrals for accepted events
+        integral_sig_partial = sig_hist.Integral(
+            threshold_bin, sig_hist.GetNbinsX() + 1
+        )
+        integral_bkg_partial = bkg_hist.Integral(
+            threshold_bin, bkg_hist.GetNbinsX() + 1,
+        )
+        
+        # divide accepted events by total events
+        tpr_current = integral_sig_partial / integral_sig
+        fpr_current = integral_bkg_partial / integral_bkg
+
+        tpr.append(tpr_current)
+        fpr.append(fpr_current)
+
+        if (tpr_current==0) and (fpr_current==0):
+            break
+
+    # convert to array
+    tpr = array('d', tpr)
+    fpr = array('d', fpr)
+
+    return tpr, fpr
+
+########################################################################
+# Uses two 3d histograms (bkg_hist for background, sig_hist for signal)
+# to compute the CICADA (or other variable associated with or_axis >
+# or_threshold) ROC. Returns TPR and FPR as arrays
+def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
+
+    # get total integral of background histogram
+    integral_bkg = float(
+        bkg_hist.Integral(
+            0, bkg_hist.GetNbinsX()+1,
+            0, bkg_hist.GetNbinsY()+1,
+            0, bkg_hist.GetNbinsZ()+1
+        )
+    )
+
+    # get total integral of signal histogram
+    integral_sig = float(
+        sig_hist.Integral(
+            0, sig_hist.GetNbinsX()+1,
+            0, sig_hist.GetNbinsY()+1,
+            0, sig_hist.GetNbinsZ()+1
+        )
+    )
+
+    if or_axis not in [1,2]:
+        raise ValueError("or_axis must be 1 or 2")
+
+    # compute bin associated with or_threshold
+    if or_axis == 1:
+        or_threshold_bin = sig_hist.GetYaxis().FindBin(or_threshold)
+    else:
+        or_threshold_bin = sig_hist.GetZaxis().FindBin(or_threshold)
+
+    # get list of thresholds
+    edges = [sig_hist.GetXaxis().GetBinLowEdge(i) for i in range(1, sig_hist.GetNbinsX() + 2)]
+
+    tpr = []
+    fpr = []
+    for threshold in edges:
+        threshold_bin = sig_hist.GetXaxis().FindBin(threshold)
+
+        # Integrate over bins where x > threshold, including
+        # overflow bins
+        integral_sig_partial_x = sig_hist.Integral(
+            threshold_bin, sig_hist.GetNbinsX() + 1,
+            0, sig_hist.GetNbinsY() + 1,
+            0, sig_hist.GetNbinsZ() + 1
+        )
+        integral_bkg_partial_x = bkg_hist.Integral(
+            threshold_bin, bkg_hist.GetNbinsX() + 1,
+            0, bkg_hist.GetNbinsY() + 1,
+            0, bkg_hist.GetNbinsZ() + 1
+        )
+
+        if or_axis == 1:
+            # Integrate over bins where y or z > or_threshold,
+            # including overflow bins
+            integral_sig_partial_yz = sig_hist.Integral(
+                0, sig_hist.GetNbinsX() + 1,
+                or_threshold_bin, sig_hist.GetNbinsY() + 1,
+                0, sig_hist.GetNbinsZ() + 1
+            )
+            integral_bkg_partial_yz = bkg_hist.Integral(
+                0, bkg_hist.GetNbinsX() + 1,
+                or_threshold_bin, bkg_hist.GetNbinsY() + 1,
+                0, bkg_hist.GetNbinsZ() + 1
+            )
+
+            # Compute the double-counted accepted events,
+            # including overlap and overflow bins
+            overlap_sig = sig_hist.Integral(
+                threshold_bin, sig_hist.GetNbinsX() + 1,
+                or_threshold_bin, sig_hist.GetNbinsY() + 1,
+                0, sig_hist.GetNbinsZ() + 1
+            )
+            overlap_bkg = bkg_hist.Integral(
+                threshold_bin, bkg_hist.GetNbinsX() + 1,
+                or_threshold_bin, bkg_hist.GetNbinsY() + 1,
+                0, bkg_hist.GetNbinsZ() + 1
+            )
+
+        else:
+            # Integrate over bins where y or z > or_threshold,
+            # including overflow bins
+            integral_sig_partial_yz = sig_hist.Integral(
+                0, sig_hist.GetNbinsX() + 1,
+                0, sig_hist.GetNbinsY() + 1,
+                or_threshold_bin, sig_hist.GetNbinsZ() + 1
+            )
+            integral_bkg_partial_yz = bkg_hist.Integral(
+                0, bkg_hist.GetNbinsX() + 1,
+                0, bkg_hist.GetNbinsY() + 1,
+                or_threshold_bin, bkg_hist.GetNbinsZ() + 1
+            )
+
+            # Compute the double-counted accepted events,
+            # including overlap and overflow bins
+            overlap_sig = sig_hist.Integral(
+                threshold_bin, sig_hist.GetNbinsX() + 1,
+                0, sig_hist.GetNbinsY() + 1,
+                or_threshold_bin, sig_hist.GetNbinsZ() + 1
+            )
+            overlap_bkg = bkg_hist.Integral(
+                threshold_bin, bkg_hist.GetNbinsX() + 1,
+                0, bkg_hist.GetNbinsY() + 1,
+                or_threshold_bin, bkg_hist.GetNbinsZ() + 1
+            )
+
+
+        # compute total number of accepted events and subtract
+        # out overlap
+        accepted_sig = (integral_sig_partial_x + integral_sig_partial_yz
+                        - overlap_sig)
+        accepted_bkg = (integral_bkg_partial_x + integral_bkg_partial_yz
+                        - overlap_bkg)
+
+        # divide by total number of events to get rates
+        tpr_current = accepted_sig / integral_sig
+        fpr_current = accepted_bkg / integral_bkg
+
+        tpr.append(tpr_current)
+        fpr.append(fpr_current)
+
+        if (tpr_current==0) and (fpr_current==0):
+            break
+
+    # convert to arrays
+    tpr = array('d', tpr)
+    fpr = array('d', fpr)
+
+    return tpr, fpr
 
 ########################################################################
 # Uses tpr and fpr arrays to create a ROOT TGraph, plotting fpr on the
