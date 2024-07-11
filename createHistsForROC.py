@@ -31,8 +31,8 @@ min_score_trig = -0.5
 max_score_trig = 1.5
 n_bins_trig = 2
 min_score_pt = 0.0
-max_score_pt = 100.0
-n_bins_pt = 200
+max_score_pt = 1000.0
+n_bins_pt = 300
 
 
 # Create a C++ lambda function for OR operation as a string

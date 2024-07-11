@@ -264,7 +264,7 @@ def plotROCL1Shortlist(hist_bkg, out_dir, bkg_name, sample_shortlist, cicada_nam
 # arrays for the OR ROC (fpr_or_ht, tpr_or_ht), cicada (tpr_cicada,
 # fpr_cicada), and ht (tpr_ht, fpr_ht). Saves plots to out_dir
 def plotHTOR(hist_sig, hist_bkg,
-             fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_ht,
+             fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_pt,
              out_dir, bkg_name, cicada_name, sample_name,
              logx = False, logy = False):
 
@@ -306,11 +306,11 @@ def plotHTOR(hist_sig, hist_bkg,
                            first = False,
                            logx = logx,
                            logy = logy)
-      
+
     # get TGraph for jet pT
     g_pt = createROCTGraph(tpr_pt,
                            fpr_pt,
-                           color = 4,
+                           color = 2,
                            markerstyle = 23,
                            first = False,
                            logx = logx,
@@ -329,8 +329,8 @@ def plotHTOR(hist_sig, hist_bkg,
     g_pt.Draw("C same")
 
     # draw graph title
-    title_template = "#splitline{{Signal = {str_sig}}}{{CICADA Version = {str_cic}}}"
-    title = title_template.format(str_sig = sample_name_dict[sample_name], str_cic = convertCICADANametoPrint(cicada_name))
+    title_template = "Signal = {str_sig}"
+    title = title_template.format(str_sig = sample_name_dict[sample_name])#, str_cic = convertCICADANametoPrint(cicada_name))
     titleObj = createLabel()
     titleObj.DrawLatex(0.13, 0.85, title)
 
@@ -369,7 +369,7 @@ def plotHTOR(hist_sig, hist_bkg,
     g_ht_point.Draw("P same")
 
     # draw legends
-    legend = ROOT.TLegend(0.1, 0.7, 0.85, 0.8)
+    legend = ROOT.TLegend(0.1, 0.7, 0.85, 0.85)
     legend_str = "(CICADA > Threshold) or (HT > " + str(options["ht_threshold"]) + ") "
     legend.AddEntry(g_or, legend_str, "l")
     legend.AddEntry(g_cicada, "CICADA > Threshold", "l")
@@ -380,7 +380,7 @@ def plotHTOR(hist_sig, hist_bkg,
     legend.SetTextSize(0.022)
     legend.Draw()
 
-    legend2 = ROOT.TLegend(0.56, 0.73, 0.85, 0.8)
+    legend2 = ROOT.TLegend(0.56, 0.77, 0.85, 0.85)
     legend2.AddEntry(g_l1, "Unprescaled Trigger", "p")
     legend2_str = "HT > " + str(options["ht_threshold"])
     legend2.AddEntry(g_ht_point, legend_str, "p")
@@ -508,7 +508,7 @@ def createIndividualROCPlots(hist_bkg, hist_sig, hist_bkg_pt, hist_sig_pt, out_d
     # calculate simple ROC for CICADA score and HT
     tpr_cicada, fpr_cicada = calculateROC(hist_bkg, hist_sig, 0)
     tpr_ht, fpr_ht = calculateROC(hist_bkg, hist_sig, 1)
-    tpr_jetpt, fpr_jetpt = calculateROCPt(hist_bkg_pt, hist_sig_pt)
+    tpr_pt, fpr_pt = calculateROCPt(hist_bkg_pt, hist_sig_pt)
 
     # calculate ROC for CICADA score > threshold OR HT > ht_threshold
     try:
@@ -524,13 +524,13 @@ def createIndividualROCPlots(hist_bkg, hist_sig, hist_bkg_pt, hist_sig_pt, out_d
 
     # plot ROC for CICADA score > threshold OR HT > ht_threshold
     plotHTOR(hist_sig, hist_bkg,
-             fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_ht
+             fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_pt,
              out_dir, bkg_name, cicada_name, sample_name)
     #plotHTOR(hist_sig, hist_bkg,
-             #fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_ht
+             #fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_pt,
              #out_dir, bkg_name, cicada_name, sample_name, logx=True)
     #plotHTOR(hist_sig, hist_bkg,
-             #fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_ht
+             #fpr_or_ht, tpr_or_ht, tpr_cicada, fpr_cicada, tpr_ht, fpr_ht, tpr_pt, fpr_pt,
              #out_dir, bkg_name, cicada_name, sample_name, logx=True, logy=True)
 
     # plot ROC for CICADA score > threshold OR L1 Trigger
@@ -579,10 +579,10 @@ def main(file_prefix, out_dir):
             # load ZeroBias histograms
             if bkg_names[l]=="ZeroBias":
                 h_zb = f_bkg[l].Get(f"anomalyScore_ZeroBias_test_{c_name}")
-                h_zb_pt = f_bkg_pt[l].Get(f"jetEt_ZeroBias_test_{c_name}")
+                h_zb_pt = f_bkg[l].Get(f"jetEt_ZeroBias_test_{c_name}")
             else:
                 h_zb = f_bkg[l].Get(f"anomalyScore_SingleNeutrino_E-10-gun_{c_name}")
-                h_zb_pt = f_bkg_pt[l].Get(f"jetEt_SingleNeutrino_E-10-gun_{c_name}")
+                h_zb_pt = f_bkg[l].Get(f"jetEt_SingleNeutrino_E-10-gun_{c_name}")
 
             # get rate plot for current CICADA version
             if bkg_names[l]=="ZeroBias":
