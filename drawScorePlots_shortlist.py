@@ -16,7 +16,7 @@ def drawOptions_ZeroBias(h_zb):
     h_zb.SetMarkerStyle(20)
     h_zb.SetStats(0)
     h_zb.SetTitle("")
-    h_zb.GetYaxis().SetTitle("Counts")
+    h_zb.GetYaxis().SetTitle("Density")
     h_zb.GetXaxis().SetTitle("CICADA Score")
 
     return h_zb
@@ -25,8 +25,8 @@ def drawOptions_ZeroBias(h_zb):
 # in shortlist with index i and returns the modified histogram
 def drawOptions_Signal(h_s, i):
 
-    h_s.SetMarkerColor(options["shortlist_colors"][i])
-    h_s.SetLineColor(options["shortlist_colors"][i])
+    h_s.SetMarkerColor(ROOT.TColor.GetColor(options["shortlist_colors"][i]))
+    h_s.SetLineColor(ROOT.TColor.GetColor(options["shortlist_colors"][i]))
     h_s.SetMarkerStyle(options["shortlist_markers"][i])
     h_s.SetStats(0)
     h_s.SetTitle("")
@@ -46,8 +46,8 @@ def drawScorePlot(file_prefix, out_dir, c_name):
     canvas = ROOT.TCanvas("canvas", "Canvas with TPads", 1000, 600)
 
     # Define three TPads
-    pad1 = ROOT.TPad("pad1", "Pad 1", 0.0, 0.0, 0.7, 1.0)
-    pad2 = ROOT.TPad("pad2", "Pad 2", 0.65, 0.0, 1.0, 1.0)
+    pad1 = ROOT.TPad("pad1", "Pad 1", 0.0, 0.0, 0.8, 1.0)
+    pad2 = ROOT.TPad("pad2", "Pad 2", 0.75, 0.0, 1.0, 1.0)
 
     # Draw the TPads on the canvas
     pad1.Draw()
@@ -68,7 +68,7 @@ def drawScorePlot(file_prefix, out_dir, c_name):
         files.append(ROOT.TFile(f"{file_prefix}_{current_sample}.root"))
         h_s = files[-1].Get(f"anomalyScore_{current_sample}_{c_name}").ProjectionX()
         h_s.Scale(1/h_s.Integral(0,h_s.GetNbinsX()+1))
-        h_s = drawOptions_Signal(h_s)
+        h_s = drawOptions_Signal(h_s, i)
 
         histograms.append(h_s)
 
@@ -86,12 +86,12 @@ def drawScorePlot(file_prefix, out_dir, c_name):
     canvas.cd()
 
     pad2.cd()
-    legend = ROOT.TLegend(0.0, 0.1, 0.9, 0.9)
+    legend = ROOT.TLegend(0, 0.4, 0.9, 0.9)
     legend.AddEntry(h_zb, "Zero Bias", "lp")
     for i in range(len(histograms)):
         name = re.sub("[\(\[].*?[\)\]]", "", sample_name_dict[options["sample_shortlist"][i]])
         legend.AddEntry(histograms[i], name, "lp")
-    legend.SetTextSize(0.045)
+    legend.SetTextSize(0.055)
     legend.SetBorderSize(0)
     legend.SetFillStyle(0)
     legend.Draw()
@@ -109,7 +109,7 @@ def main(file_prefix, output_dir):
 
     for i in range(len(options["cicada_names"])):
 
-        drawScorePlot(file_prefix, out_dir, options["cicada_names"][i])
+        drawScorePlot(file_prefix, output_dir, options["cicada_names"][i])
 
 if __name__ == "__main__":
 
@@ -117,9 +117,9 @@ if __name__ == "__main__":
         description="This program creates CICADA score plots"
     )
     parser.add_argument(
-        "-i",
-        "--input_file",
-        help="path to input ROOT file containing hists"
+        "-p",
+        "--file_prefix",
+        help="path prefix to input ROOT files containing hists"
     )
     parser.add_argument(
         "-o",

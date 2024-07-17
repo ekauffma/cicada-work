@@ -234,7 +234,7 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
     fpr = array('d', fpr)
 
     return tpr, fpr
-    
+
 ########################################################################
 # Uses two 3d histograms (bkg_hist for background, sig_hist for signal)
 # to compute the ROC along for jet pT (which is in a separate histogram
@@ -270,7 +270,7 @@ def calculateROCPt(bkg_hist, sig_hist):
         integral_bkg_partial = bkg_hist.Integral(
             threshold_bin, bkg_hist.GetNbinsX() + 1,
         )
-        
+
         # divide accepted events by total events
         tpr_current = integral_sig_partial / integral_sig
         fpr_current = integral_bkg_partial / integral_bkg
@@ -426,7 +426,7 @@ def calculateROCOR(bkg_hist, sig_hist, or_threshold, or_axis):
 # indicates whether the TGraph will be the first graph on its respective
 # canvas, and bkg_name is either "Zero Bias" or "Single Neutrino Gun".
 # Returns the TGraph object
-def createROCTGraph(tpr, fpr, color = 1, markerstyle = 20, first = True,
+def createROCTGraph(tpr, fpr, color = 1, markerstyle = 20, linestyle = 1, linewidth = 4, first = True,
                     bkg_name = "Zero Bias",
                     rate=True, logx = False, logy = False):
 
@@ -445,8 +445,9 @@ def createROCTGraph(tpr, fpr, color = 1, markerstyle = 20, first = True,
 
     # plotting options for graph
     g.SetTitle("")
-    g.SetLineWidth(4)
+    g.SetLineWidth(linewidth)
     g.SetLineColor(color)
+    g.SetLineStyle(linestyle)
     g.SetMarkerColor(color)
     g.SetMarkerSize(1)
     g.SetMarkerStyle(markerstyle)

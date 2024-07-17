@@ -1,4 +1,7 @@
 {
+    "scoreHist_y_min": 10e-7,
+    "scoreHist_y_max": 1,
+    "scoreHist_x_max": 256,
     "ROC_x_max": 0.00344054,
     "ROC_x_min_log": 1e-5,
     "ROC_y_max": 1.4,
@@ -21,6 +24,19 @@
         "VBFHToInvisible_M-125_TuneCP5_13p6TeV_powheg-pythia8",
         "TT_TuneCP5_13p6TeV_powheg-pythia8"
     ],
-    "shortlist_colors": [2, 95, 92, 72, 209, 4, 65, 51, 6],
-    "shortlist_markers": [33, 22, 23, 21, 25, 34, 26, 27, 28]
+    "shortlist_colors": ["#3f90da", "#92dadd", "#832db6", "#bd1f01", "#94a4a2", "#ffa90e", "#a96b59", "#b9ac70", "#e76300"],
+    "shortlist_markers": [33, 22, 23, 21, 25, 34, 26, 27, 28],
+    "samples_loweff": [
+        "SUEP",
+        "VBFHToInvisible_M-125_TuneCP5_13p6TeV_powheg-pythia8",
+        "GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8",
+        "HTo2LongLivedTo4b_MH-350_MFF-80_CTau-1000mm_TuneCP5_13p6TeV-pythia8",
+        "SUSYGluGluToBBHToBB_NarrowWidth_M-350_TuneCP5_13p6TeV-pythia8"
+    ],
+    "samples_higheff": [
+        "GluGluHToBB_M-125_TuneCP5_13p6TeV_powheg-pythia8",
+        "HHHTo6B_c3_0_d4_0_TuneCP5_13p6TeV_amcatnlo-pythia8",
+        "ttHto2C_M-125_TuneCP5_13p6TeV_powheg-pythia8",
+        "TT_TuneCP5_13p6TeV_powheg-pythia8"
+    ]
 }

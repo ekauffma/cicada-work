@@ -12,6 +12,7 @@ from array import array
 from sampleNames import sample_name_dict
 from plottingUtils import convertCICADANametoPrint, createLabel, calculateROC, calculateROCPt, calculateROCOR, createROCTGraph, getL1UnprescaledEfficiency, getHTEfficiency, getAcceptRatioHist
 import json
+import re
 
 with open('plottingOptions.json') as f:
     options = json.load(f)
@@ -142,7 +143,7 @@ def plotROCHTShortlist(hist_bkg, out_dir, bkg_name, sample_shortlist, cicada_nam
         else: first = False
         g = createROCTGraph(tpr_or_ht,
                             fpr_or_ht,
-                            color = options["shortlist_colors"][i],
+                            color = ROOT.TColor.GetColor(options["shortlist_colors"][i]),
                             markerstyle = options["shortlist_markers"][i],
                             first = first,
                             bkg_name = convertCICADANametoPrint(bkg_name))
@@ -218,7 +219,7 @@ def plotROCL1Shortlist(hist_bkg, out_dir, bkg_name, sample_shortlist, cicada_nam
         else: first = False
         g = createROCTGraph(tpr_or_l1,
                             fpr_or_l1,
-                            color = options["shortlist_colors"][i],
+                            color = ROOT.TColor.GetColor(options["shortlist_colors"][i]),
                             markerstyle = options["shortlist_markers"][i],
                             first = first,
                             bkg_name = convertCICADANametoPrint(bkg_name))
@@ -253,6 +254,102 @@ def plotROCL1Shortlist(hist_bkg, out_dir, bkg_name, sample_shortlist, cicada_nam
         f"{out_dir}/ROC_L1_shortlist_{bkg_name}_{cicada_name}.png"
     )
     c.Close()
+
+    return
+
+def plotCombinedROC(hist_bkg, signal_list, file_prefix, c_name, out_dir, suffix):
+
+    # create ROOT canvas
+    canvas = ROOT.TCanvas("c", "ROC", 1000, 800)
+
+    # Define TPads (pad2 for legend)
+    pad1 = ROOT.TPad("pad1", "Pad 1", 0.0, 0.0, 0.65, 1.0)
+    pad2 = ROOT.TPad("pad2", "Pad 2", 0.6, 0.0, 1.0, 1.0)
+
+    # Draw the TPads on the canvas
+    pad1.Draw()
+    pad2.Draw()
+
+    pad1.cd()
+
+    tgraphs = []
+    sig_files = []
+    max_y = 0.0
+    first = True
+
+    for i in range(len(signal_list)):
+
+        signal_index = options["sample_shortlist"].index(signal_list[i])
+        signal_color = ROOT.TColor.GetColor(options["shortlist_colors"][signal_index])
+
+        sig_files.append(ROOT.TFile(f"{file_prefix}_{signal_list[i]}.root"))
+
+        # load histograms
+        hist_sig = sig_files[-1].Get(f"anomalyScore_{signal_list[i]}_{c_name}")
+
+        tpr_cicada, fpr_cicada = calculateROC(hist_bkg, hist_sig, 0)
+        tpr_ht, fpr_ht = calculateROC(hist_bkg, hist_sig, 1)
+
+        # get TGraph for CICADA
+        g_cicada = createROCTGraph(tpr_cicada,
+                                   fpr_cicada,
+                                   color = signal_color,
+                                   linestyle = 1,
+                                   linewidth = 2,
+                                   first = first)
+
+        if first:
+            g_cicada.GetXaxis().SetRangeUser(0, options["ROC_x_max"] * options["rate_scale_factor"])
+        max_cicada = findClosestY(g_cicada, options["ROC_x_max"] * options["rate_scale_factor"])
+        tgraphs.append(g_cicada)
+
+        first = False
+
+        # get TGraph for HT
+        g_ht = createROCTGraph(tpr_ht,
+                               fpr_ht,
+                               color = signal_color,
+                               linestyle = 7,
+                               linewidth = 2,
+                               first = first)
+
+        max_ht = findClosestY(g_ht, options["ROC_x_max"] * options["rate_scale_factor"])
+        tgraphs.append(g_ht)
+
+        max_y = max(max_y, max(max_cicada, max_ht))
+
+    tgraphs[0].GetYaxis().SetRangeUser(0, 1.15*max_y)
+    tgraphs[0].Draw("AC")
+    for i in range(1, len(tgraphs)):
+        tgraphs[i].Draw("C same")
+
+    # draw cms label
+    cmsLatex = createLabel()
+    cmsLatex.DrawLatex(0.1,
+                       0.92,
+                       "#font[61]{CMS} #font[52]{Preliminary}")
+
+    canvas.cd()
+
+    # create legend
+    pad2.cd()
+    legend = ROOT.TLegend(0.0, 0.4, 0.9, 0.9)
+    for i in range(0, int(len(tgraphs)/2)):
+        name = re.sub("[\(\[].*?[\)\]]", "", sample_name_dict[signal_list[i]])
+        name2 = name + " CICADA ROC"
+        legend.AddEntry(tgraphs[2*i], name2, "l")
+        name2 = name + " HT ROC"
+        legend.AddEntry(tgraphs[2*i+1], name2, "l")
+
+    legend.SetTextSize(0.04)
+    legend.SetBorderSize(0)
+    legend.SetFillStyle(0)
+    legend.Draw()
+
+    canvas.SaveAs(f"{out_dir}/ROC_CICADA_HT_combined_{c_name}_{suffix}.pdf")
+
+    for i in range(len(sig_files)):
+        sig_files[i].Close()
 
     return
 
@@ -583,6 +680,10 @@ def main(file_prefix, out_dir):
             else:
                 h_zb = f_bkg[l].Get(f"anomalyScore_SingleNeutrino_E-10-gun_{c_name}")
                 h_zb_pt = f_bkg[l].Get(f"jetEt_SingleNeutrino_E-10-gun_{c_name}")
+
+            # combined ROC plots
+            plotCombinedROC(h_zb, options["samples_loweff"], file_prefix, c_name, out_dir, "low")
+            plotCombinedROC(h_zb, options["samples_higheff"], file_prefix, c_name, out_dir, "high")
 
             # get rate plot for current CICADA version
             if bkg_names[l]=="ZeroBias":
