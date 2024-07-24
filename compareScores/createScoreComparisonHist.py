@@ -87,7 +87,7 @@ def main(dataset, out_dir):
 
     print("Creating and writing histogram for emulated score")
     histModel = ROOT.RDF.TH2DModel(
-        "emulatedcore",
+        "emulatedScore",
         "emulatedScore",
         bins_run,
         min_run,
