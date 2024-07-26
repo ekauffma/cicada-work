@@ -1,8 +1,8 @@
 import os
 import json
 
-datasets = ["Muon0"]
-directories = ["/hdfs/store/user/ekauffma/Muon0/CICADA_Muon0_Run2024F_v1_a_20240723/"]
+datasets = ["Muon0", "JetMET0", "Tau"]
+directories = ["/hdfs/store/user/ekauffma/Muon0/", "/hdfs/store/user/ekauffma/JetMET0", "/hdfs/store/user/ekauffma/Tau"]
 
 def list_root_files(directory):
     root_files = []

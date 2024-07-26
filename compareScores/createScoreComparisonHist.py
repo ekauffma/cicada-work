@@ -109,7 +109,7 @@ def main(dataset, out_dir):
             dict_total[combined_data["run"][i]] = 0
             dict_discrepancies[combined_data["run"][i]] = 0
 
-        if combined_data["score_difference"][i]==0: dict_discrepancies[combined_data["run"][i]]+=1
+        if combined_data["score_difference"][i]!=0: dict_discrepancies[combined_data["run"][i]]+=1
         dict_total[combined_data["run"][i]]+=1
 
     print("Dividing number of discrepancies by total number of events and saving")
