@@ -23,7 +23,7 @@ def main(input_file, run):
 				print(f"An exception occured for file {file_name}")
 				continue
 	print("Created TChains")
-	
+
 	for i in range(len(tchains)):
 		rdf = ROOT.RDataFrame(tchains[i])
 		print(f"Created RDF for {tchain_names[i]}")
@@ -59,7 +59,7 @@ def main(input_file, run):
 		# make efficiency plot
 		eff = ROOT.TH1D("anomalyScore_eff",
 				"anomalyScore_eff",
-				hist.GetNbinsX(), 
+				hist.GetNbinsX(),
 				hist.GetXaxis().GetXmin(),
 				hist.GetXaxis().GetXmax())
 
@@ -75,7 +75,7 @@ def main(input_file, run):
 
 			eff.SetBinContent(j,scoreplot_int_current)
 			eff.SetBinError(j, uncertainty)
-		
+
 		c2 = ROOT.TCanvas("c2", "efficiency", 200, 10, 700, 500)
 		eff.SetStats(0)
 		eff.SetMarkerColor(4)
@@ -86,7 +86,7 @@ def main(input_file, run):
 		eff.GetXaxis().SetRangeUser(0,8)
 		eff.Draw("b")
 		eff.Draw("e same")
-		
+
 		cmsLatex = ROOT.TLatex()
 		cmsLatex.SetTextSize(0.04)
 		cmsLatex.SetNDC(True)
@@ -111,7 +111,7 @@ def main(input_file, run):
 		eff.Draw("b")
 		eff.Draw("e same")
 		c3.SetLogy()
-		
+
 		cmsLatex = ROOT.TLatex()
 		cmsLatex.SetTextSize(0.04)
 		cmsLatex.SetNDC(True)
@@ -120,7 +120,7 @@ def main(input_file, run):
 
 		c3.Draw()
 		c3.SaveAs(f"rate_{run}_{tchain_names[i]}.png")
-		c3.Close()	
+		c3.Close()
 
 if __name__ == "__main__":
 
